@@ -1,42 +1,43 @@
 ## Interface for a SplitScreen
-# 英文文档注释：SplitScreen（分屏）的接口与逻辑控制脚本。
+## SplitScreen（分屏）的接口与逻辑控制脚本。
 class_name SplitScreen
-# 定义类名 SplitScreen，方便在 root.gd 等脚本中通过类型判断识别分屏节点。
+## 定义类名 SplitScreen，方便在 root.gd 等脚本中通过类型判断识别分屏节点。
 extends Node
-# 继承自 Node，作为该分屏子树的根节点，负责统筹子节点的配置与交互。
+## 继承自 Node，作为该分屏子树的根节点，负责统筹子节点的配置与交互。
 
 
+## 手柄前缀字符串，值为 "Joypad"。
+## 用于在 OptionButton 的文本中标识手柄选项，例如 "Joypad 1"、"Joypad 2" 等。
 const JOYPAD_PREFIX: String = "Joypad"
-# 定义常量 JOYPAD_PREFIX（手柄前缀字符串），值为 "Joypad"。
-# 用于在 OptionButton 的文本中标识手柄选项，例如 "Joypad 1"、"Joypad 2" 等。
 
+## 初始位置，类型推断为 Vector2，默认值为 Vector2.ZERO。
+## 该属性会暴露在编辑器检查器中，允许在场景内直接设置，但代码中实际使用的是 root.gd 传入的配置位置。
 @export var init_position := Vector2.ZERO
-# @export 修饰的变量 init_position（初始位置），类型推断为 Vector2，默认值为 Vector2.ZERO。
-# 该属性会暴露在编辑器检查器中，允许在场景内直接设置，但代码中实际使用的是 root.gd 传入的配置位置。
 
+## 键盘选项字典，用于保存当前可用的所有键盘按键配置副本。
+## 在 set_config 中从外部传入，供后续 OptionButton 填充下拉菜单使用。
 var _keyboard_options: Dictionary
-# 声明私有变量 _keyboard_options（键盘选项字典），用于保存当前可用的所有键盘按键配置副本。
-# 在 set_config 中从外部传入，供后续 OptionButton 填充下拉菜单使用。
 
+## 获取名为 "OptionButton" 的子节点（选项按钮），用于让玩家选择使用哪套键盘或哪个手柄。
+## @onready 表示在节点进入场景树并完成初始化后执行此赋值。
 @onready var opt: OptionButton = $OptionButton
-# @onready 表示在节点进入场景树并完成初始化后执行此赋值。
-# 获取名为 "OptionButton" 的子节点（选项按钮），用于让玩家选择使用哪套键盘或哪个手柄。
+
+## 获取 InputRoutingViewportContainer 下的 SubViewport 子节点。
+## 该视口负责渲染实际的游戏画面，并且所有分屏会共享同一个 World2D。
 @onready var viewport: SubViewport = $InputRoutingViewportContainer/SubViewport
-# 获取 InputRoutingViewportContainer 下的 SubViewport 子节点。
-# 该视口负责渲染实际的游戏画面，并且所有分屏会共享同一个 World2D。
+
+## 获取 InputRoutingViewportContainer 子节点实例。
+## 它是输入事件的第一道闸门，根据 opt 的选择过滤并转发输入。
 @onready var input_router: InputRoutingViewportContainer = $InputRoutingViewportContainer
-# 获取 InputRoutingViewportContainer 子节点实例。
-# 它是输入事件的第一道闸门，根据 opt 的选择过滤并转发输入。
+
+## 获取 SubViewport 内的 Player 节点（玩家角色）。
+## 每个分屏对应一个独立的 Player 实例，拥有各自的位置和颜色。
 @onready var play: Player = $InputRoutingViewportContainer/SubViewport/Player
-# 获取 SubViewport 内的 Player 节点（玩家角色）。
-# 每个分屏对应一个独立的 Player 实例，拥有各自的位置和颜色。
 
 
-# Set the configuration of this split screen and perform OptionButton initialization.
-# 英文注释：设置该分屏的配置，并执行 OptionButton 的初始化。
+## 设置该分屏的配置，并执行 OptionButton 的初始化。
+## 该函数由 root.gd 在 _ready 中调用，用于统一初始化每个分屏的参数。
 func set_config(config_dict: Dictionary):
-	# 定义公开函数 set_config，接收配置字典 config_dict。
-	# 该函数由 root.gd 在 _ready 中调用，用于统一初始化每个分屏的参数。
 	_keyboard_options = config_dict["keyboard"]
 	# 从配置字典中提取 "keyboard" 项（键盘配置字典），保存到本地变量。
 	play.position = config_dict["position"]
@@ -68,11 +69,9 @@ func set_config(config_dict: Dictionary):
 	# 这是实现"多窗口同世界"的关键：所有分屏看到同一个物理世界和实体状态。
 
 
-# Update Keyboard Settings after selecting them in the OptionButton.
-# 英文注释：在 OptionButton 中选中某项后，更新键盘/手柄输入配置。
+## 信号回调函数，当 OptionButton 的选中项改变时自动触发。
+## index 参数为新选中项的索引。
 func _on_option_button_item_selected(index: int) -> void:
-	# 信号回调函数，当 OptionButton 的选中项改变时自动触发。
-	# index 参数为新选中项的索引。
 	var text: String = opt.get_item_text(index)
 	# 获取当前选中项的显示文本，例如 "wasd" 或 "Joypad 2"。
 	if text.begins_with(JOYPAD_PREFIX):

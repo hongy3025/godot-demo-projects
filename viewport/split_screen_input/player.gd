@@ -1,27 +1,27 @@
 ## Player implementation.
-# 英文文档注释：玩家角色的实现脚本。
+## 玩家角色的实现脚本。
 class_name Player
 # 定义类名 Player，使其可以被其他脚本以类型方式引用（如 root.gd、split_screen.gd 中的类型标注）。
+
 extends CharacterBody2D
 # 继承自 CharacterBody2D，这是 Godot 4 中专用于 2D 角色移动的物理节点。
 # 它内置了移动和碰撞处理功能，适合作为玩家或 NPC 的基类。
 
 
+## 移动速度因子，类型为 float，数值为 200.0。
+## 最终的像素移动速度等于 _movement 向量乘以该因子，单位是 像素/秒。
 const factor: float = 200.0
-# 定义常量 factor（移动速度因子），类型为 float，数值为 200.0。
-# 最终的像素移动速度等于 _movement 向量乘以该因子，单位是 像素/秒。
 
+## 当前移动速率/方向向量，类型为 Vector2，初始值为 (0, 0)。
+## 该向量的每个分量是整数步进（-1、0 或 1），表示玩家在各轴上的移动意图。
+## 正值表示向下/向右，负值表示向上/向左。
 var _movement: Vector2 = Vector2(0, 0)
-# 声明私有变量 _movement（当前移动速率/方向向量），类型为 Vector2，初始值为 (0, 0)。
-# 该向量的每个分量是整数步进（-1、0 或 1），表示玩家在各轴上的移动意图。
-# 正值表示向下/向右，负值表示向上/向左。
 
 
-# Update movement variable based on input that reaches this SubViewport.
-# 英文注释：根据到达该 SubViewport 的输入更新移动变量。
+## 根据到达该 SubViewport 的输入更新移动变量。
+## _unhandled_input 是 Node 的内置虚函数，当输入事件未被 GUI 或其他节点消费时触发。
+## 由于 input_router 的过滤，只有分配给该分屏的按键/手柄事件才会到达此处。
 func _unhandled_input(input_event: InputEvent) -> void:
-	# _unhandled_input 是 Node 的内置虚函数，当输入事件未被 GUI 或其他节点消费时触发。
-	# 由于 input_router 的过滤，只有分配给该分屏的按键/手柄事件才会到达此处。
 	if input_event.is_action_pressed(&"ux_up") or input_event.is_action_released(&"ux_down"):
 		# 判断条件：按下了 "ux_up"（上移动作），或者释放了 "ux_down"（下移动作）。
 		# 逻辑解释：这两个动作都会导致垂直方向上的"向上净效果"增加。
@@ -54,14 +54,12 @@ func _unhandled_input(input_event: InputEvent) -> void:
 	# 注意：该输入方案采用了一种"相反按键释放时抵消"的设计。
 	# 例如同时按下上和下，_movement.y 先 -1 再 +1，净效果为 0，角色停止垂直移动。
 
-
-# Move the node based on the content of the movement variable.
-# 英文注释：根据 movement 变量的内容移动节点。
+## 根据 movement 变量的内容移动节点。
+## _physics_process 是 Node 的内置虚函数，以固定帧率（与物理同步）被调用。
+## delta 参数为上一次物理帧到本次所经过的时间（秒），用于保证运动与帧率无关。
 func _physics_process(delta: float) -> void:
-	# _physics_process 是 Node 的内置虚函数，以固定帧率（与物理同步）被调用。
-	# delta 参数为上一次物理帧到本次所经过的时间（秒），用于保证运动与帧率无关。
-	move_and_collide(_movement * factor * delta)
 	# 调用 CharacterBody2D 的 move_and_collide 方法进行移动。
 	# 参数计算：_movement（方向向量，分量通常为 -1/0/1） × factor（速度因子 200） × delta（时间增量）。
 	# 结果是一个表示本帧期望位移的 Vector2，单位为像素。
 	# 如果移动路径上有 CollisionObject2D，该方法会处理碰撞并在碰到时停止滑动（不同于 move_and_slide）。
+	move_and_collide(_movement * factor * delta)

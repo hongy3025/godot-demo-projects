@@ -1,14 +1,14 @@
 ## Set up different Split Screens
 ## Provide Input configuration
 ## Connect Split Screens to Play Area
-# 英文文档注释：设置多个分屏，提供输入配置，并将分屏连接到共享的游戏区域。
+## 设置多个分屏，提供输入配置，并将分屏连接到共享的游戏区域。
 extends Node
-# 继承自 Node，作为整个场景树的根节点，负责统筹初始化所有分屏及其玩家。
+## 继承自 Node，作为整个场景树的根节点，负责统筹初始化所有分屏及其玩家。
 
 
+## 键盘选项字典，键为 String，值为 Dictionary。
+## 该字典内置了 4 套预设的键盘按键方案，供玩家选择。
 const KEYBOARD_OPTIONS: Dictionary[String, Dictionary] = {
-	# 定义常量 KEYBOARD_OPTIONS（键盘选项字典），键为 String，值为 Dictionary。
-	# 该字典内置了 4 套预设的键盘按键方案，供玩家选择。
 	"wasd": {"keys": [KEY_W, KEY_A, KEY_S, KEY_D]},
 	# "wasd" 方案：使用 W、A、S、D 四个按键分别控制上、左、下、右。
 	"ijkl": {"keys": [KEY_I, KEY_J, KEY_K, KEY_L]},
@@ -18,11 +18,10 @@ const KEYBOARD_OPTIONS: Dictionary[String, Dictionary] = {
 	"numpad": {"keys": [KEY_KP_4, KEY_KP_5, KEY_KP_6, KEY_KP_8]},
 	# "numpad" 方案：使用小键盘的数字键 4、5、6、8 进行控制。
 } # 4 keyboard sets for moving players around.
-# 英文注释：4 套用于移动玩家的键盘按键组合。
 
+## 玩家颜色数组，类型为 Array[Color]。
+## 每个分屏的玩家将按索引获取一种颜色，用于视觉区分。
 const PLAYER_COLORS: Array[Color] = [
-	# 定义常量 PLAYER_COLORS（玩家颜色数组），类型为 Array[Color]。
-	# 每个分屏的玩家将按索引获取一种颜色，用于视觉区分。
 	Color.WHITE,
 	# 索引 0：白色。
 	Color("ff8f02"),
@@ -32,11 +31,10 @@ const PLAYER_COLORS: Array[Color] = [
 	Color("ff05a0")
 	# 索引 3：粉色/洋红色（十六进制色值 ff05a0）。
 ] # Modulate Colors of each Player.
-# 英文注释：每个玩家的调制颜色。
 
 
+## 分屏配置字典，用于在初始化过程中临时承载参数并传递给每个 SplitScreen。
 var config: Dictionary = {
-	# 声明变量 config（分屏配置字典），用于在初始化过程中临时承载参数并传递给每个 SplitScreen。
 	"keyboard": KEYBOARD_OPTIONS,
 	# "keyboard" 项：传入所有可用的键盘配置方案。
 	"joypads": 4,
@@ -50,18 +48,16 @@ var config: Dictionary = {
 	"color": Color(),
 	# "color" 项：当前玩家的颜色，初始为空颜色，后续从 PLAYER_COLORS 中选取。
 } # Split Screen configuration Dictionary.
-# 英文注释：分屏配置字典。
 
+## 中央共享的游戏世界视口。
+## @onready 表示在节点就绪后执行赋值。获取名为 "PlayArea" 的子节点（SubViewport 类型）。
+## 所有 SplitScreen 的 SubViewport 都会将其 world_2d 指向 play_area.world_2d，实现同一个物理世界的多视角渲染。
 @onready var play_area: SubViewport = $PlayArea
-# @onready 表示在节点就绪后执行赋值。
-# 获取名为 "PlayArea" 的子节点（SubViewport 类型），它是中央共享的游戏世界视口。
-# 所有 SplitScreen 的 SubViewport 都会将其 world_2d 指向 play_area.world_2d，实现同一个物理世界的多视角渲染。
 
 
-# Initialize each Split Screen and each player node.
-# 英文注释：初始化每个分屏以及每个玩家节点。
+## 初始化每个分屏以及每个玩家节点。
+## _ready 是 Godot 的内置虚函数，当节点及其所有子节点都进入场景树后自动调用一次。
 func _ready() -> void:
-	# _ready 是 Godot 的内置虚函数，当节点及其所有子节点都进入场景树后自动调用一次。
 	config["world"] = play_area.world_2d
 	# 将 play_area 的 world_2d（2D 物理与渲染世界对象）赋值到 config 字典中。
 	# 这样后续传递给 SplitScreen 时，所有分屏都会共享同一个 World2D。
