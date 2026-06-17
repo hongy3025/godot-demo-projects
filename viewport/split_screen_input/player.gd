@@ -1,11 +1,11 @@
 ## Player implementation.
 ## 玩家角色的实现脚本。
-class_name Player
 # 定义类名 Player，使其可以被其他脚本以类型方式引用（如 root.gd、split_screen.gd 中的类型标注）。
+class_name Player
 
-extends CharacterBody2D
 # 继承自 CharacterBody2D，这是 Godot 4 中专用于 2D 角色移动的物理节点。
 # 它内置了移动和碰撞处理功能，适合作为玩家或 NPC 的基类。
+extends CharacterBody2D
 
 
 ## 移动速度因子，类型为 float，数值为 200.0。
@@ -22,35 +22,35 @@ var _movement: Vector2 = Vector2(0, 0)
 ## _unhandled_input 是 Node 的内置虚函数，当输入事件未被 GUI 或其他节点消费时触发。
 ## 由于 input_router 的过滤，只有分配给该分屏的按键/手柄事件才会到达此处。
 func _unhandled_input(input_event: InputEvent) -> void:
+	# 判断条件：按下了 "ux_up"（上移动作），或者释放了 "ux_down"（下移动作）。
+	# 逻辑解释：这两个动作都会导致垂直方向上的"向上净效果"增加。
+	# 例如：按下上键开始向上走；按下下键时 y+1，释放下键时取消这个 +1，相当于回到原地或更偏上。
 	if input_event.is_action_pressed(&"ux_up") or input_event.is_action_released(&"ux_down"):
-		# 判断条件：按下了 "ux_up"（上移动作），或者释放了 "ux_down"（下移动作）。
-		# 逻辑解释：这两个动作都会导致垂直方向上的"向上净效果"增加。
-		# 例如：按下上键开始向上走；按下下键时 y+1，释放下键时取消这个 +1，相当于回到原地或更偏上。
-		_movement.y -= 1
 		# 将 _movement 的 y 分量减 1。y 减小意味着向上移动（Godot 2D 坐标系中 y 轴向下为正）。
-		get_viewport().set_input_as_handled()
+		_movement.y -= 1
 		# 调用 set_input_as_handled() 标记该输入事件已被处理，阻止其继续向上层节点传播。
+		get_viewport().set_input_as_handled()
+	# 判断条件：按下了 "ux_down"，或者释放了 "ux_up"。
+	# 这会导致垂直方向上的"向下净效果"增加。
 	elif input_event.is_action_pressed(&"ux_down") or input_event.is_action_released(&"ux_up"):
-		# 判断条件：按下了 "ux_down"，或者释放了 "ux_up"。
-		# 这会导致垂直方向上的"向下净效果"增加。
-		_movement.y += 1
 		# 将 _movement 的 y 分量加 1，表示向下移动。
-		get_viewport().set_input_as_handled()
+		_movement.y += 1
 		# 标记输入已处理。
+		get_viewport().set_input_as_handled()
+	# 判断条件：按下了 "ux_left"，或者释放了 "ux_right"。
+	# 导致水平方向上的"向左净效果"增加。
 	elif input_event.is_action_pressed(&"ux_left") or input_event.is_action_released(&"ux_right"):
-		# 判断条件：按下了 "ux_left"，或者释放了 "ux_right"。
-		# 导致水平方向上的"向左净效果"增加。
-		_movement.x -= 1
 		# 将 _movement 的 x 分量减 1。x 减小意味着向左移动。
-		get_viewport().set_input_as_handled()
+		_movement.x -= 1
 		# 标记输入已处理。
+		get_viewport().set_input_as_handled()
+	# 判断条件：按下了 "ux_right"，或者释放了 "ux_left"。
+	# 导致水平方向上的"向右净效果"增加。
 	elif input_event.is_action_pressed(&"ux_right") or input_event.is_action_released(&"ux_left"):
-		# 判断条件：按下了 "ux_right"，或者释放了 "ux_left"。
-		# 导致水平方向上的"向右净效果"增加。
-		_movement.x += 1
 		# 将 _movement 的 x 分量加 1，表示向右移动。
-		get_viewport().set_input_as_handled()
+		_movement.x += 1
 		# 标记输入已处理。
+		get_viewport().set_input_as_handled()
 	# 注意：该输入方案采用了一种"相反按键释放时抵消"的设计。
 	# 例如同时按下上和下，_movement.y 先 -1 再 +1，净效果为 0，角色停止垂直移动。
 
