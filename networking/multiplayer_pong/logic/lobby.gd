@@ -1,40 +1,53 @@
+## 乒乓球游戏大厅 —— 管理主机/加入、网络连接和游戏生命周期。
+##
+## 继承自 [Control]，作为游戏大厅 UI。
+## 使用 [ENetMultiplayerPeer] 作为底层传输层，支持 ENet 压缩。
 extends Control
 
-# Default game server port. Can be any number between 1024 and 49151.
-# Not present on the list of registered or common ports as of May 2024:
-# https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
+## 默认游戏服务器端口。可以是 1024 到 49151 之间的任意数字。
+## 截至 2024 年 5 月，该端口不在已注册或常用端口列表中：
+## https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
 const DEFAULT_PORT = 8910
 
+## 服务器地址输入框。
 @onready var address: LineEdit = $Address
+## 主机按钮。
 @onready var host_button: Button = $HostButton
+## 加入按钮。
 @onready var join_button: Button = $JoinButton
+## 成功状态标签。
 @onready var status_ok: Label = $StatusOk
+## 失败状态标签。
 @onready var status_fail: Label = $StatusFail
+## 端口转发提示标签。
 @onready var port_forward_label: Label = $PortForward
+## 查找公网 IP 的链接按钮。
 @onready var find_public_ip_button: LinkButton = $FindPublicIP
 
+## ENet 多人游戏对等端实例。
 var peer: ENetMultiplayerPeer
 
+
+## _ready 入口：连接所有网络相关的回调信号。
 func _ready() -> void:
-	# Connect all the callbacks related to networking.
 	multiplayer.peer_connected.connect(_player_connected)
 	multiplayer.peer_disconnected.connect(_player_disconnected)
 	multiplayer.connected_to_server.connect(_connected_ok)
 	multiplayer.connection_failed.connect(_connected_fail)
 	multiplayer.server_disconnected.connect(_server_disconnected)
 
-#region Network callbacks from SceneTree
-# Callback from SceneTree.
+#region SceneTree 网络回调
+## 对等端连接回调：加载乒乓球场景并开始游戏。
 func _player_connected(_id: int) -> void:
-	# Someone connected, start the game!
 	var pong: Node2D = load("res://pong.tscn").instantiate()
-	# Connect deferred so we can safely erase it from the callback.
+	# 使用延迟连接以便在回调中安全删除。
 	pong.game_finished.connect(_end_game, CONNECT_DEFERRED)
 
 	get_tree().get_root().add_child(pong)
 	hide()
 
 
+## 对等端断开连接回调。
 func _player_disconnected(_id: int) -> void:
 	if multiplayer.is_server():
 		_end_game("Client disconnected.")
@@ -42,41 +55,43 @@ func _player_disconnected(_id: int) -> void:
 		_end_game("Server disconnected.")
 
 
-# Callback from SceneTree, only for clients (not server).
+## 成功连接到服务器的回调，仅客户端执行。
 func _connected_ok() -> void:
-	pass # This function is not needed for this project.
+	pass
 
 
-# Callback from SceneTree, only for clients (not server).
+## 连接失败的回调，仅客户端执行。
 func _connected_fail() -> void:
 	_set_status("Couldn't connect.", false)
 
-	multiplayer.set_multiplayer_peer(null)  # Remove peer.
+	multiplayer.set_multiplayer_peer(null)
 	host_button.set_disabled(false)
 	join_button.set_disabled(false)
 
 
+## 服务器断开的回调。
 func _server_disconnected() -> void:
 	_end_game("Server disconnected.")
 #endregion
 
-#region Game creation methods
+#region 游戏创建方法
+## 结束游戏：清除场景、重置对等端和 UI 状态。
+## 参数 with_error: 可选的错误消息。
 func _end_game(with_error: String = "") -> void:
 	if has_node(^"/root/Pong"):
-		# Erase immediately, otherwise network might show
-		# errors (this is why we connected deferred above).
 		get_node(^"/root/Pong").free()
 		show()
 
-	multiplayer.set_multiplayer_peer(null)  # Remove peer.
+	multiplayer.set_multiplayer_peer(null)
 	host_button.set_disabled(false)
 	join_button.set_disabled(false)
 
 	_set_status(with_error, false)
 
 
+## 设置状态显示文本。
+## 参数 text: 状态文本；is_ok: 是否为成功状态。
 func _set_status(text: String, is_ok: bool) -> void:
-	# Simple way to show status.
 	if is_ok:
 		status_ok.set_text(text)
 		status_fail.set_text("")
@@ -85,12 +100,12 @@ func _set_status(text: String, is_ok: bool) -> void:
 		status_fail.set_text(text)
 
 
+## "主机"按钮点击处理：创建 ENet 服务器并等待玩家加入。
 func _on_host_pressed() -> void:
 	peer = ENetMultiplayerPeer.new()
-	# Set a maximum of 1 peer, since Pong is a 2-player game.
+	# 设置最大 1 个对等端，因为乒乓球是双人游戏。
 	var err := peer.create_server(DEFAULT_PORT, 1)
 	if err != OK:
-		# Is another server running?
 		_set_status("Can't host, address in use.",false)
 		return
 	peer.get_host().compress(ENetConnection.COMPRESS_RANGE_CODER)
@@ -101,11 +116,11 @@ func _on_host_pressed() -> void:
 	_set_status("Waiting for player...", true)
 	get_window().title = ProjectSettings.get_setting("application/config/name") + ": Server"
 
-	# Only show hosting instructions when relevant.
 	port_forward_label.visible = true
 	find_public_ip_button.visible = true
 
 
+## "加入"按钮点击处理：连接到指定 IP 的 ENet 服务器。
 func _on_join_pressed() -> void:
 	var ip := address.get_text()
 	if not ip.is_valid_ip_address():
@@ -121,5 +136,7 @@ func _on_join_pressed() -> void:
 	get_window().title = ProjectSettings.get_setting("application/config/name") + ": Client"
 #endregion
 
+
+## "查找公网 IP"链接点击处理：打开浏览器访问 icanhazip.com。
 func _on_find_public_ip_pressed() -> void:
 	OS.shell_open("https://icanhazip.com/")

@@ -1,3 +1,4 @@
+## 轨道摄像机 —— 围绕父节点旋转的摄像机控制器。
 extends Camera3D
 
 
@@ -15,7 +16,6 @@ func _unhandled_input(input_event: InputEvent) -> void:
 	if input_event is InputEventMouseButton:
 		if input_event.button_index == MOUSE_BUTTON_RIGHT:
 			_rotation_enabled = input_event.pressed
-
 		return
 
 	if not _rotation_enabled:

@@ -1,7 +1,14 @@
+## 炸弹人游戏计分板 —— 管理玩家分数显示和胜负判定。
+##
+## 继承自 [HBoxContainer]，作为游戏顶部的计分板 UI。
+## 每帧检测岩石是否全部被摧毁，如果是则宣布获胜者。
 extends HBoxContainer
 
+## 存储每个玩家的计分数据，格式为 { id: { name, label, score } }。
 var player_labels := {}
 
+
+## _process 每帧处理：检测岩石数量，如果为 0 则宣布获胜者。
 func _process(_delta: float) -> void:
 	var rocks_left := $"../Rocks".get_child_count()
 	if rocks_left == 0:
@@ -16,6 +23,8 @@ func _process(_delta: float) -> void:
 		$"../Winner".show()
 
 
+## 增加指定玩家的分数。
+## 参数 for_who: 玩家 ID。
 func increase_score(for_who: int) -> void:
 	assert(for_who in player_labels)
 
@@ -24,6 +33,8 @@ func increase_score(for_who: int) -> void:
 	pl.label.set_text(pl.name + "\n" + str(pl.score))
 
 
+## 添加新玩家到计分板。
+## 参数 id: 玩家 ID；new_player_name: 玩家名称。
 func add_player(id: int, new_player_name: String) -> void:
 	var label := Label.new()
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -43,9 +54,11 @@ func add_player(id: int, new_player_name: String) -> void:
 	}
 
 
+## _ready 入口：隐藏获胜者标签。
 func _ready() -> void:
 	$"../Winner".hide()
 
 
+## "退出游戏"按钮点击处理：调用 gamestate 结束游戏。
 func _on_exit_game_pressed() -> void:
 	gamestate.end_game()

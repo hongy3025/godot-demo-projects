@@ -1,3 +1,4 @@
+## 每帧最大物理步数滑块 —— 控制 Engine.max_physics_steps_per_frame。
 extends HBoxContainer
 
 

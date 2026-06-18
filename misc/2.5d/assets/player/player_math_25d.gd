@@ -16,6 +16,7 @@ var isometric_controls: bool = true
 @onready var _parent_node25d: Node25D = get_parent()
 
 
+## _physics_process 入口，每物理帧处理玩家移动、跳跃和重力。
 func _physics_process(delta: float) -> void:
 	if Input.is_action_pressed(&"exit"):
 		get_tree().quit()
@@ -66,5 +67,5 @@ func _vertical_movement(delta: float) -> void:
 	vertical_speed -= delta * 240  # 重力加速度
 	var k := move_and_collide(Vector3.UP * vertical_speed * delta)
 
-	if k != null:
+	if k != None:
 		vertical_speed = 0

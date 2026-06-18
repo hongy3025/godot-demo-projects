@@ -1,10 +1,17 @@
+## 窗口管理演示 —— 控制面板 UI，显示和操作窗口状态。
+##
+## 继承自 [Control]，提供窗口模式切换、鼠标模式切换、多屏信息显示等功能。
+## 实时显示窗口位置、大小、屏幕信息等调试数据。
 extends Control
 
+## 鼠标位置缓存
 var mouse_position := Vector2()
 
+## 观察者节点引用
 @onready var observer: CharacterBody3D = $"../Observer"
 
 
+## _ready 入口，初始化 UI 状态并检测平台兼容性。
 func _ready() -> void:
 	if OS.has_feature("web"):
 		for button: BaseButton in [
@@ -24,12 +31,13 @@ func _ready() -> void:
 		set_physics_process(false)
 		set_process_input(false)
 
-	# See godotengine/godot#73563, fetching the refresh rate on every frame may be slow on some platforms.
+	# 参见 godotengine/godot#73563，某些平台上每帧获取刷新率可能较慢
 	$Labels/Label_Screen0_RefreshRate.text = "Screen0 Refresh Rate: %.2f Hz" % DisplayServer.screen_get_refresh_rate()
 	if DisplayServer.get_screen_count() > 1:
 		$Labels/Label_Screen1_RefreshRate.text = "Screen1 Refresh Rate: %.2f Hz" % DisplayServer.screen_get_refresh_rate(1)
 
 
+## _physics_process 入口，每物理帧更新 UI 显示信息。
 func _physics_process(_delta: float) -> void:
 	var modetext: String = "Mode: "
 	if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN:
@@ -51,7 +59,7 @@ func _physics_process(_delta: float) -> void:
 	$Labels/Label_Mode.text = modetext
 	$Labels/Label_Position.text = str("Position: ", DisplayServer.window_get_position())
 	$Labels/Label_Size.text = str("Size: ", DisplayServer.window_get_size())
-	# Pad decimals when showing mouse position, as some platforms report floating-point mouse positions.
+	# 显示鼠标位置时补齐小数，因为某些平台报告浮点数鼠标位置
 	$Labels/Label_MousePosition.text = str("Mouse Position: %.4v" % mouse_position)
 	$Labels/Label_Screen_Count.text = str("Screen_Count: ", DisplayServer.get_screen_count())
 	$Labels/Label_Screen_Current.text = str("Screen: ", DisplayServer.window_get_current_screen())
@@ -85,6 +93,7 @@ func _physics_process(_delta: float) -> void:
 	$Buttons/Button_MouseModeCaptured.set_pressed(Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED)
 
 
+## _input 入口，处理键盘快捷键切换鼠标模式。
 func _input(input_event: InputEvent) -> void:
 	if input_event is InputEventMouseMotion:
 		mouse_position = input_event.position
@@ -110,6 +119,7 @@ func _input(input_event: InputEvent) -> void:
 			_on_button_mouse_mode_confined_hidden_pressed()
 
 
+## 检测当前平台是否支持窗口管理 API。
 func check_wm_api() -> bool:
 	var s: String = ""
 	if not DisplayServer.has_method(&"get_screen_count"):
@@ -130,23 +140,6 @@ func check_wm_api() -> bool:
 		s += " - get_window_size()\n"
 	if not DisplayServer.has_method(&"window_set_size"):
 		s += " - window_set_size()\n"
-# These function are no longer and this is set through flags!
-#	if not DisplayServer.has_method(&"set_window_fullscreen"):
-#		s += " - set_window_fullscreen()\n"
-#	if not DisplayServer.window_get_flag() OS.has_method(&"is_window_fullscreen"):
-#		s += " - is_window_fullscreen()\n"
-#	if not OS.has_method(&"set_window_resizable"):
-#		s += " - set_window_resizable()\n"
-#	if not OS.has_method(&"is_window_resizable"):
-#		s += " - is_window_resizable()\n"
-#	if not OS.has_method(&"set_window_minimized"):
-#		s += " - set_window_minimized()\n"
-#	if not OS.has_method(&"is_window_minimized"):
-#		s += " - is_window_minimized()\n"
-#	if not OS.has_method(&"set_window_maximized"):
-#		s += " - set_window_maximized()\n"
-#	if not OS.has_method(&"is_window_maximized"):
-#		s += " - is_window_maximized()\n"
 
 	if s.length() == 0:
 		return true
@@ -156,22 +149,27 @@ func check_wm_api() -> bool:
 		return false
 
 
+## 移动窗口到 (100, 100) 位置。
 func _on_button_move_to_pressed() -> void:
 	DisplayServer.window_set_position(Vector2(100, 100))
 
 
+## 调整窗口大小为 1280x720。
 func _on_button_resize_pressed() -> void:
 	DisplayServer.window_set_size(Vector2(1280, 720))
 
 
+## 将窗口切换到屏幕 0。
 func _on_button_screen_0_pressed() -> void:
 	DisplayServer.window_set_current_screen(0)
 
 
+## 将窗口切换到屏幕 1。
 func _on_button_screen_1_pressed() -> void:
 	DisplayServer.window_set_current_screen(1)
 
 
+## 切换全屏模式。
 func _on_button_fullscreen_pressed() -> void:
 	if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
@@ -179,6 +177,7 @@ func _on_button_fullscreen_pressed() -> void:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 
 
+## 切换固定大小模式。
 func _on_button_fixed_size_pressed() -> void:
 	if DisplayServer.window_get_flag(DisplayServer.WINDOW_FLAG_RESIZE_DISABLED):
 		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_RESIZE_DISABLED, false)
@@ -186,6 +185,7 @@ func _on_button_fixed_size_pressed() -> void:
 		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_RESIZE_DISABLED, true)
 
 
+## 切换最小化模式。
 func _on_button_minimized_pressed() -> void:
 	if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_MINIMIZED:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
@@ -193,6 +193,7 @@ func _on_button_minimized_pressed() -> void:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_MINIMIZED)
 
 
+## 切换最大化模式。
 func _on_button_maximized_pressed() -> void:
 	if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_MAXIMIZED:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_MINIMIZED)
@@ -200,22 +201,27 @@ func _on_button_maximized_pressed() -> void:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_MAXIMIZED)
 
 
+## 设置鼠标模式为可见。
 func _on_button_mouse_mode_visible_pressed() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
+## 设置鼠标模式为隐藏。
 func _on_button_mouse_mode_hidden_pressed() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
 
 
+## 设置鼠标模式为捕获。
 func _on_button_mouse_mode_captured_pressed() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	observer.state = observer.State.GRAB
 
 
+## 设置鼠标模式为受限。
 func _on_button_mouse_mode_confined_pressed() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CONFINED
 
 
+## 设置鼠标模式为受限隐藏。
 func _on_button_mouse_mode_confined_hidden_pressed() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CONFINED_HIDDEN

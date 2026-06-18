@@ -1,16 +1,20 @@
+## 枪械节点 —— 生成并发射子弹的武器。
+## Cooldown 计时器控制射击间隔。
 class_name Gun
 extends Marker2D
-## Represents a weapon that spawns and shoots bullets.
-## The Cooldown timer controls the cooldown duration between shots.
 
+## 子弹速度。
 const BULLET_VELOCITY = 850.0
+## 子弹场景预加载。
 const BULLET_SCENE = preload("res://player/bullet.tscn")
 
 @onready var sound_shoot := $Shoot as AudioStreamPlayer2D
 @onready var timer := $Cooldown as Timer
 
 
-# This method is only called by Player.gd.
+## 射击方法（仅由 Player.gd 调用）。
+## 参数 direction: 射击方向（1 为右，-1 为左）。
+## 返回: 是否成功发射。
 func shoot(direction: float = 1.0) -> bool:
 	if not timer.is_stopped():
 		return false

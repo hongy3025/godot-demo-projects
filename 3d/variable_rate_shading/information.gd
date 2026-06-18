@@ -1,3 +1,4 @@
+## VRS 信息面板 —— 显示 FPS 和视口分辨率。
 extends VBoxContainer
 
 

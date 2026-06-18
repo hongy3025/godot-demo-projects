@@ -1,3 +1,4 @@
+## 物理帧率滑块 —— 控制 Engine.physics_ticks_per_second。
 extends HBoxContainer
 
 

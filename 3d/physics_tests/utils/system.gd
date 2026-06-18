@@ -1,3 +1,4 @@
+## 系统控制器 —— 管理物理引擎检测、调试碰撞显示和快捷键。
 extends Node
 
 
@@ -13,15 +14,12 @@ var _engine := PhysicsEngine.OTHER
 func _enter_tree() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
-	# Always enable visible collision shapes on startup
-	# (same as the Debug > Visible Collision Shapes option).
+	# 启动时始终启用可见碰撞形状。
 	get_tree().debug_collisions_hint = true
 
 	var engine_string: String = ProjectSettings.get_setting("physics/3d/physics_engine")
 	match engine_string:
-		"DEFAULT":
-			_engine = PhysicsEngine.GODOT_PHYSICS
-		"GodotPhysics3D":
+		"DEFAULT", "GodotPhysics3D":
 			_engine = PhysicsEngine.GODOT_PHYSICS
 		"Jolt Physics":
 			_engine = PhysicsEngine.JOLT_PHYSICS
@@ -40,9 +38,9 @@ func _process(_delta: float) -> void:
 		var debug_collision_enabled := not _is_debug_collision_enabled()
 		_set_debug_collision_enabled(debug_collision_enabled)
 		if debug_collision_enabled:
-			Log.print_log("Debug Collision ON")
+			Log.print_log("调试碰撞 ON")
 		else:
-			Log.print_log("Debug Collision OFF")
+			Log.print_log("调试碰撞 OFF")
 
 	if Input.is_action_just_pressed(&"toggle_pause"):
 		get_tree().paused = not get_tree().paused
@@ -51,6 +49,7 @@ func _process(_delta: float) -> void:
 		get_tree().quit()
 
 
+## 获取当前物理引擎类型。
 func get_physics_engine() -> PhysicsEngine:
 	return _engine
 

@@ -1,19 +1,20 @@
+## 移动平台测试 —— 测试不同角色类型在移动平台上的表现。
 extends Test
 
 
-const OPTION_BODY_TYPE = "Body Type/%s (%d)"
+const OPTION_BODY_TYPE = "物体类型/%s (%d)"
 
-const OPTION_SLOPE = "Physics options/Stop on slope (Character only)"
-const OPTION_SNAP = "Physics options/Use snap (Character only)"
-const OPTION_FRICTION = "Physics options/Friction (Rigid only)"
-const OPTION_ROUGH = "Physics options/Rough (Rigid only)"
-const OPTION_PROCESS_PHYSICS = "Physics options/AnimationPlayer physics process mode"
+const OPTION_SLOPE = "物理选项/斜坡停止（仅角色）"
+const OPTION_SNAP = "物理选项/使用吸附（仅角色）"
+const OPTION_FRICTION = "物理选项/摩擦力（仅刚体）"
+const OPTION_ROUGH = "物理选项/粗糙（仅刚体）"
+const OPTION_PROCESS_PHYSICS = "物理选项/动画播放器物理处理模式"
 
-const SHAPE_CAPSULE = "Collision shapes/Capsule"
-const SHAPE_BOX = "Collision shapes/Box"
-const SHAPE_CYLINDER = "Collision shapes/Cylinder"
-const SHAPE_SPHERE = "Collision shapes/Sphere"
-const SHAPE_CONVEX = "Collision shapes/Convex"
+const SHAPE_CAPSULE = "碰撞形状/胶囊"
+const SHAPE_BOX = "碰撞形状/盒子"
+const SHAPE_CYLINDER = "碰撞形状/圆柱"
+const SHAPE_SPHERE = "碰撞形状/球体"
+const SHAPE_CONVEX = "碰撞形状/凸多边形"
 
 var _slope: bool = false
 var _snap: bool = false
@@ -164,7 +165,7 @@ func start_test() -> void:
 		animation_player.playback_process_mode = AnimationPlayer.ANIMATION_PROCESS_IDLE
 	animation_player.play(&"Move")
 
-	$LabelBodyType.text = "Body Type: " + _body_type[_current_body_index] + " \nCollision Shape: " + _current_shape
+	$LabelBodyType.text = "物体类型: " + _body_type[_current_body_index] + " \n碰撞形状: " + _current_shape
 
 
 func get_packed_scene(node: Node) -> PackedScene:

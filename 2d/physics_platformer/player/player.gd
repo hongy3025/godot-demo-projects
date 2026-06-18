@@ -1,3 +1,5 @@
+## 物理平台游戏玩家 —— 使用 RigidBody2D 的物理驱动角色。
+## 在 _integrate_forces() 中处理移动、跳跃、射击和动画。
 class_name Player
 extends RigidBody2D
 
@@ -33,6 +35,7 @@ var shoot_time: float = 1e20
 @onready var bullet_shoot := $BulletShoot as Marker2D
 
 
+## 物理力集成回调 —— 处理所有移动逻辑。
 func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 	var velocity := state.get_linear_velocity()
 	var step := state.get_step()
@@ -40,7 +43,7 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 	var new_anim := anim
 	var new_siding_left := siding_left
 
-	# Get player input.
+	# 获取玩家输入
 	var move_left := Input.is_action_pressed(&"move_left")
 	var move_right := Input.is_action_pressed(&"move_right")
 	var jump := Input.is_action_pressed(&"jump")
@@ -50,11 +53,11 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 	if spawn:
 		_spawn_enemy_above.call_deferred()
 
-	# Deapply previous floor velocity.
+	# 移除上一帧的地面水平速度
 	velocity.x -= floor_h_velocity
 	floor_h_velocity = 0.0
 
-	# Find the floor (a contact with upwards facing collision normal).
+	# 检测地面接触（法线朝上的碰撞）
 	var found_floor: bool = false
 	var floor_index := -1
 
@@ -65,8 +68,7 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 			found_floor = true
 			floor_index = contact_index
 
-	# A good idea when implementing characters of all kinds,
-	# compensates for physics imprecision, as well as human reaction delay.
+	# 射击输入处理
 	if shoot and not shooting:
 		_shot_bullet.call_deferred()
 	else:
@@ -75,14 +77,13 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 	if found_floor:
 		airborne_time = 0.0
 	else:
-		airborne_time += step # Time it spent in the air.
+		airborne_time += step
 
 	var on_floor := airborne_time < MAX_FLOOR_AIRBORNE_TIME
 
-	# Process jump.
+	# 跳跃逻辑
 	if jumping:
 		if velocity.y > 0:
-			# Set off the jumping flag if going down.
 			jumping = false
 		elif not jump:
 			stopping_jump = true
@@ -91,7 +92,7 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 			velocity.y += STOP_JUMP_FORCE * step
 
 	if on_floor:
-		# Process logic when character is on floor.
+		# 地面移动逻辑
 		if move_left and not move_right:
 			if velocity.x > -WALK_MAX_VELOCITY:
 				velocity.x -= WALK_ACCEL * step
@@ -105,14 +106,14 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 				xv = 0
 			velocity.x = signf(velocity.x) * xv
 
-		# Check jump.
+		# 跳跃
 		if not jumping and jump:
 			velocity.y = -JUMP_VELOCITY
 			jumping = true
 			stopping_jump = false
 			sound_jump.play()
 
-		# Check siding.
+		# 朝向
 		if velocity.x < 0 and move_left:
 			new_siding_left = true
 		elif velocity.x > 0 and move_right:
@@ -130,7 +131,7 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 			else:
 				new_anim = "run"
 	else:
-		# Process logic when the character is in the air.
+		# 空中移动逻辑
 		if move_left and not move_right:
 			if velocity.x > -WALK_MAX_VELOCITY:
 				velocity.x -= AIR_ACCEL * step
@@ -140,7 +141,6 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 		else:
 			var xv := absf(velocity.x)
 			xv -= AIR_DEACCEL * step
-
 			if xv < 0:
 				xv = 0
 			velocity.x = signf(velocity.x) * xv
@@ -156,7 +156,7 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 			else:
 				new_anim = "falling"
 
-	# Update siding.
+	# 更新朝向
 	if new_siding_left != siding_left:
 		if new_siding_left:
 			sprite.scale.x = -1
@@ -165,23 +165,24 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 
 		siding_left = new_siding_left
 
-	# Change animation.
+	# 切换动画
 	if new_anim != anim:
 		anim = new_anim
 		animation_player.play(anim)
 
 	shooting = shoot
 
-	# Apply floor velocity.
+	# 应用地面水平速度（如移动平台）
 	if found_floor:
 		floor_h_velocity = state.get_contact_collider_velocity_at_position(floor_index).x
 		velocity.x += floor_h_velocity
 
-	# Finally, apply gravity and set back the linear velocity.
+	# 应用重力和设置速度
 	velocity += state.get_total_gravity() * step
 	state.set_linear_velocity(velocity)
 
 
+## 发射子弹。
 func _shot_bullet() -> void:
 	shoot_time = 0
 	var bullet := BULLET_SCENE.instantiate() as RigidBody2D
@@ -199,9 +200,10 @@ func _shot_bullet() -> void:
 	sprite_smoke.restart()
 	sound_shoot.play()
 
-	add_collision_exception_with(bullet) # Make bullet and this not collide.
+	add_collision_exception_with(bullet)
 
 
+## 在玩家上方生成敌人（用于测试）。
 func _spawn_enemy_above() -> void:
 	var enemy := ENEMY_SCENE.instantiate() as RigidBody2D
 	enemy.position = position + 50 * Vector2.UP

@@ -13,6 +13,7 @@ const MainPanel = preload("res://addons/node25d/main_screen/main_screen_25d.tscn
 var main_panel_instance: VBoxContainer
 
 
+## _enter_tree 入口，插件启用时初始化主面板并注册自定义节点类型。
 func _enter_tree() -> void:
 	main_panel_instance = MainPanel.instantiate()
 	# 将编辑器接口引用传递给主面板（第二个子节点是 Viewport25D）
@@ -29,6 +30,7 @@ func _enter_tree() -> void:
 	add_custom_type("ShadowMath25D", "CharacterBody3D", preload("shadow_math_25d.gd"), preload("icons/shadow_math_25d_icon.png"))
 
 
+## _exit_tree 入口，插件卸载时清理主面板并移除自定义节点类型。
 func _exit_tree() -> void:
 	if main_panel_instance:
 		main_panel_instance.queue_free()

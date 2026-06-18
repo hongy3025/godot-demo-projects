@@ -1,7 +1,8 @@
+## 射线投射测试 —— 测试射线与不同碰撞形状的交互。
 extends Test
 
 
-const OPTION_TEST_CASE_HIT_FROM_INSIDE = "Test case/Hit from inside"
+const OPTION_TEST_CASE_HIT_FROM_INSIDE = "测试用例/从内部命中"
 
 var _hit_from_inside: bool = false
 var _do_raycasts: bool = false
@@ -40,7 +41,7 @@ func _physics_process(delta: float) -> void:
 
 	_do_raycasts = false
 
-	Log.print_log("* Start Raycasting...")
+	Log.print_log("* 开始射线投射...")
 
 	_raycast_visuals.clear_surfaces()
 	_raycast_visuals.surface_begin(Mesh.PRIMITIVE_LINES)
@@ -49,23 +50,20 @@ func _physics_process(delta: float) -> void:
 		var body: PhysicsBody3D = shape
 		var space_state := body.get_world_3d().direct_space_state
 
-		Log.print_log("* Testing: %s" % body.name)
+		Log.print_log("* 测试: %s" % body.name)
 
 		var center := body.global_transform.origin
 
-		# Raycast entering from the top.
 		var res := _add_raycast(space_state, center + Vector3(0.0, 2.0, 0.0), center)
-		Log.print_log("Raycast in: %s" % ("HIT" if res else "NO HIT"))
+		Log.print_log("射线进入: %s" % ("命中" if res else "未命中"))
 
-		# Raycast exiting from inside.
 		center.x -= 0.2
 		res = _add_raycast(space_state, center, center - Vector3(0.0, 3.0, 0.0))
-		Log.print_log("Raycast out: %s" % ("HIT" if res else "NO HIT"))
+		Log.print_log("射线穿出: %s" % ("命中" if res else "未命中"))
 
-		# Raycast all inside.
 		center.x += 0.4
 		res = _add_raycast(space_state, center, center - Vector3(0.0, 0.8, 0.0))
-		Log.print_log("Raycast inside: %s" % ("HIT" if res else "NO HIT"))
+		Log.print_log("射线内部: %s" % ("命中" if res else "未命中"))
 
 	_raycast_visuals.surface_end()
 
@@ -91,11 +89,9 @@ func _add_raycast(space_state: PhysicsDirectSpaceState3D, pos_start: Vector3, po
 	else:
 		_raycast_visuals.surface_set_color(Color.BLACK)
 
-	# Draw raycast line.
 	_raycast_visuals.surface_add_vertex(pos_start)
 	_raycast_visuals.surface_add_vertex(pos_end)
 
-	# Draw raycast arrow.
 	_raycast_visuals.surface_add_vertex(pos_end)
 	_raycast_visuals.surface_add_vertex(pos_end + Vector3(-0.05, 0.1, 0.0))
 	_raycast_visuals.surface_add_vertex(pos_end)

@@ -1,3 +1,4 @@
+## 宽阶段性能测试 —— 测试大量物体的创建、添加、移动和删除性能。
 extends Test
 
 
@@ -21,9 +22,7 @@ func _ready() -> void:
 		return
 
 	_log_physics_start()
-
 	_create_objects()
-
 	await wait_for_physics_ticks(5).wait_done
 	_log_physics_stop()
 
@@ -32,9 +31,7 @@ func _ready() -> void:
 		return
 
 	_log_physics_start()
-
 	_add_objects()
-
 	await wait_for_physics_ticks(5).wait_done
 	_log_physics_stop()
 
@@ -43,9 +40,7 @@ func _ready() -> void:
 		return
 
 	_log_physics_start()
-
 	_move_objects()
-
 	await wait_for_physics_ticks(5).wait_done
 	_log_physics_stop()
 
@@ -54,9 +49,7 @@ func _ready() -> void:
 		return
 
 	_log_physics_start()
-
 	_remove_objects()
-
 	await wait_for_physics_ticks(5).wait_done
 	_log_physics_stop()
 
@@ -64,7 +57,7 @@ func _ready() -> void:
 	if is_timer_canceled():
 		return
 
-	Log.print_log("* Done.")
+	Log.print_log("* 完成。")
 
 
 func _exit_tree() -> void:
@@ -80,7 +73,7 @@ func _physics_process(delta: float) -> void:
 		var time_delta := time - _log_physics_time_usec
 		var time_total := time - _log_physics_time_usec_start
 		_log_physics_time_usec = time
-		Log.print_log("  Physics Tick: %.3f ms (total = %.3f ms)" % [0.001 * time_delta, 0.001 * time_total])
+		Log.print_log("  物理刻: %.3f ms (总计 = %.3f ms)" % [0.001 * time_delta, 0.001 * time_total])
 
 
 func _log_physics_start() -> void:
@@ -96,7 +89,7 @@ func _log_physics_stop() -> void:
 func _create_objects() -> void:
 	_objects.clear()
 
-	Log.print_log("* Creating objects...")
+	Log.print_log("* 创建物体...")
 	var timer := Time.get_ticks_usec()
 
 	var pos_x := -0.5 * (row_size - 1) * BOX_SPACE.x
@@ -108,7 +101,6 @@ func _create_objects() -> void:
 			var pos_z := -0.5 * (depth_size - 1) * BOX_SPACE.z
 
 			for depth in depth_size:
-				# Create a new object and shape every time to avoid the overhead of connecting many bodies to the same shape.
 				var box: RigidBody3D = create_rigidbody_box(BOX_SIZE)
 				box.gravity_scale = 0.0
 				box.transform.origin = Vector3(pos_x, pos_y, pos_z)
@@ -121,43 +113,42 @@ func _create_objects() -> void:
 		pos_x += BOX_SPACE.x
 
 	timer = Time.get_ticks_usec() - timer
-	Log.print_log("  Create Time: %.3f ms" % (0.001 * timer))
+	Log.print_log("  创建时间: %.3f ms" % (0.001 * timer))
 
 
 func _add_objects() -> void:
 	var root_node: Node3D = $Objects
 
-	Log.print_log("* Adding objects...")
+	Log.print_log("* 添加物体...")
 	var timer := Time.get_ticks_usec()
 
 	for object in _objects:
 		root_node.add_child(object)
 
 	timer = Time.get_ticks_usec() - timer
-	Log.print_log("  Add Time: %.3f ms" % (0.001 * timer))
+	Log.print_log("  添加时间: %.3f ms" % (0.001 * timer))
 
 
 func _move_objects() -> void:
-	Log.print_log("* Moving objects...")
+	Log.print_log("* 移动物体...")
 	var timer := Time.get_ticks_usec()
 
 	for object in _objects:
 		object.transform.origin += BOX_SPACE
 
 	timer = Time.get_ticks_usec() - timer
-	Log.print_log("  Move Time: %.3f ms" % (0.001 * timer))
+	Log.print_log("  移动时间: %.3f ms" % (0.001 * timer))
 
 
 func _remove_objects() -> void:
 	var root_node: Node3D = $Objects
 
-	Log.print_log("* Removing objects...")
+	Log.print_log("* 移除物体...")
 	var timer := Time.get_ticks_usec()
 
-	# Remove objects in reversed order to avoid the overhead of changing child index in parent.
 	var object_count := _objects.size()
 	for object_index in object_count:
 		root_node.remove_child(_objects[object_count - object_index - 1])
 
 	timer = Time.get_ticks_usec() - timer
-	Log.print_log("  Remove Time: %.3f ms" % (0.001 * timer))
+	Log.print_log("  移除时间: %.3f ms" % (0.001 * timer))

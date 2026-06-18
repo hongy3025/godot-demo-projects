@@ -23,6 +23,8 @@ var _shadow_root: Node25D
 var _target_math: Node3D
 
 
+## _ready 入口，获取阴影根节点并定位目标对象的 3D 节点。
+## 通过兄弟节点索引定位目标: 阴影节点应位于目标节点的下一个兄弟位置。
 func _ready() -> void:
 	_shadow_root = get_parent()
 
@@ -39,6 +41,9 @@ func _ready() -> void:
 	push_error("Shadow is not in the correct place, expected a previous sibling node with a 3D first child.")
 
 
+## _physics_process 入口，每物理帧执行阴影碰撞检测。
+## 将 ShapeCast 定位到目标对象的 3D 位置，向下发射射线检测地面碰撞点。
+## 有碰撞则显示阴影并定位到碰撞点，无碰撞则隐藏阴影（悬空）。
 func _physics_process(_delta: float) -> void:
 	if _target_math == null:
 		if _shadow_root != null:

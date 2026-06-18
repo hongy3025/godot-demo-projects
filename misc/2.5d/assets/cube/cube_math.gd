@@ -17,6 +17,7 @@ var _cube_math_spatials: Array[Node3D] = []
 @onready var _parent: Node = get_parent()
 
 
+## _ready 入口，生成 3x3x3 的立方体点阵。
 func _ready() -> void:
 	_parent = get_parent()
 
@@ -34,6 +35,7 @@ func _ready() -> void:
 		add_child(_cube_math_spatials[i])
 
 
+## _process 入口，每帧处理立方体旋转并同步 3D 位置到 CubePoint。
 func _process(delta: float) -> void:
 	if Input.is_action_pressed(&"exit"):
 		get_tree().quit()

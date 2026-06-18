@@ -1,17 +1,26 @@
+## 卡车小镇场景控制器 —— 管理天气氛围、灯光和音效。
+##
+## 继承自 [Node3D]，支持四种氛围模式（日出/白天/日落/夜晚）的切换，
+## 自动控制车灯、环境音效和兼容模式光照适配。
 extends Node3D
 
+## 氛围模式枚举。
 enum Mood {
-	SUNRISE,
-	DAY,
-	SUNSET,
-	NIGHT,
+	SUNRISE,  ## 日出。
+	DAY,      ## 白天。
+	SUNSET,   ## 日落。
+	NIGHT,    ## 夜晚。
 }
 
+## 操作说明面板。
 @onready var controls_sheet: Control = %Controls
 
+## 当前氛围模式。
 var mood := Mood.DAY: set = set_mood
 
+## 是否开启灯光。
 var turn_on_lights: bool = false
+## 各氛围模式对应的环境音效资源。
 var ambient_sound: Array = [
 	preload("res://town/sound/mood_sunrise.ogg"),
 	preload("res://town/sound/mood_day.ogg"),
@@ -19,13 +28,18 @@ var ambient_sound: Array = [
 	preload("res://town/sound/mood_night.ogg"),
 ]
 
-# Only assigned when using the Compatibility rendering method.
-# This is used to darken the sunlight to compensate for sRGB blending (without affecting sky rendering).
+# 仅在兼容渲染模式下使用。
+# 用于降低阳光亮度以补偿 sRGB 混合（不影响天空渲染）。
 var compatibility_light: DirectionalLight3D
 
 
+## 设置场景。将车辆添加到场景并配置引用。
+##
+## 参数:
+##   car: 车辆节点
+##   back_callback: 返回按钮回调
+##   sdfgi: 是否启用 SDFGI
 func setup(car: Node3D, back_callback: Callable, sdfgi: bool) -> void:
-	# A car scene may have vehicles.
 	var car_body: VehicleBody3D = car.get_child(0)
 
 	car_body.turbometer = %Turbometer
@@ -37,18 +51,17 @@ func setup(car: Node3D, back_callback: Callable, sdfgi: bool) -> void:
 	%WorldEnvironment.environment.sdfgi_enabled = sdfgi
 
 
+## _ready 入口。初始化氛围、操作面板和兼容模式适配。
 func _ready() -> void:
-	# Ensure headlights are toggled on automatically according to the initial mood.
-	# The scene tree is not available at first, so we have to set the mood a second time
-	# in deferred mode, which will call the setter again.
+	# 确保车灯根据初始氛围自动开关。
 	set_deferred(&"mood", mood)
 	controls_sheet.hide()
 
 	if RenderingServer.get_current_rendering_method() == "gl_compatibility":
-		# Use PCF13 shadow filtering to improve quality (Medium maps to PCF5 instead).
+		# 使用 PCF13 软阴影提高质量。
 		RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_HIGH)
 
-		# Darken the light's energy to compensate for sRGB blending (without affecting sky rendering).
+		# 降低光源能量以补偿 sRGB 混合。
 		$DirectionalLight3D.sky_mode = DirectionalLight3D.SKY_MODE_SKY_ONLY
 		compatibility_light = $DirectionalLight3D.duplicate()
 		compatibility_light.light_energy = $DirectionalLight3D.light_energy * 0.2
@@ -56,10 +69,14 @@ func _ready() -> void:
 		add_child(compatibility_light)
 
 		for headlight: Light3D in get_tree().get_nodes_in_group(&"headlight"):
-			# Enable Reverse Cull Face to fix shadow biasing in Compatibility.
+			# 启用反向面剔除以修复兼容模式下的阴影偏差。
 			headlight.shadow_reverse_cull_face = true
 
 
+## _input 入口。处理氛围切换和操作面板显示。
+##
+## 参数:
+##   input_event: 输入事件对象
 func _input(input_event: InputEvent) -> void:
 	if input_event.is_action_pressed(&"cycle_mood"):
 		mood = wrapi(mood + 1, 0, Mood.size()) as Mood
@@ -70,6 +87,10 @@ func _input(input_event: InputEvent) -> void:
 		controls_sheet.visible = not controls_sheet.visible
 
 
+## 设置氛围模式。更新光照、天空、雾效和车灯。
+##
+## 参数:
+##   p_mood: 目标氛围模式
 func set_mood(p_mood: Mood) -> void:
 	mood = p_mood
 	turn_on_lights = false
@@ -105,7 +126,6 @@ func set_mood(p_mood: Mood) -> void:
 	$AmbientSound.stream = ambient_sound[p_mood]
 
 	if compatibility_light:
-		# Darken the light's energy to compensate for sRGB blending (without affecting sky rendering).
 		compatibility_light.rotation_degrees = $DirectionalLight3D.rotation_degrees
 		compatibility_light.light_color = $DirectionalLight3D.light_color
 		compatibility_light.light_energy = $DirectionalLight3D.light_energy * 0.2
@@ -113,10 +133,8 @@ func set_mood(p_mood: Mood) -> void:
 	if is_inside_tree():
 		var car := get_tree().get_nodes_in_group(&"car")[0]
 		if (
-				# Switch headlights on for nighttime.
 				turn_on_lights and not car.headlights_active
 		) or (
-				# Switch headlights off for daytime.
 				not turn_on_lights and car.headlights_active
 		):
 			get_tree().call_group(&"car", &"toggle_headlights")

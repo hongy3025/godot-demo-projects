@@ -1,17 +1,32 @@
+## 玩家角色 —— 第三人称跳跃踩怪游戏的主角。
+##
+## 继承自 [CharacterBody3D]，实现移动、跳跃、踩怪弹跳和碰撞检测。
 extends CharacterBody3D
 
+## 玩家被击中时发出的信号。
 signal hit
 
-## How fast the player moves in meters per second.
+## 玩家移动速度（米/秒）。
 @export var speed = 14
-## Vertical impulse applied to the character upon jumping in meters per second.
+## 跳跃冲量（米/秒）。
 @export var jump_impulse = 20
-## Vertical impulse applied to the character upon bouncing over a mob in meters per second.
+## 踩到怪物后的弹跳冲量（米/秒）。
 @export var bounce_impulse = 16
-## The downward acceleration when in the air, in meters per second.
+## 空中下落加速度（米/秒²）。
 @export var fall_acceleration = 75
 
 
+## _physics_process 入口。每物理帧处理移动、跳跃和踩怪检测。
+##
+## 参数:
+##   delta: 物理帧时间间隔
+##
+## 核心逻辑：
+## 1. 读取 WASD 输入并计算移动方向
+## 2. 根据移动方向旋转角色
+## 3. 应用跳跃和重力
+## 4. 检测是否踩到怪物（通过碰撞法线判断）
+## 5. 根据跳跃高度调整角色 X 轴旋转（跳跃弧线效果）
 func _physics_process(delta):
 	var direction = Vector3.ZERO
 	if Input.is_action_pressed(&"move_right"):
@@ -24,9 +39,8 @@ func _physics_process(delta):
 		direction.z -= 1
 
 	if direction != Vector3.ZERO:
-		# In the lines below, we turn the character when moving and make the animation play faster.
 		direction = direction.normalized()
-		# Setting the basis property will affect the rotation of the node.
+		# 设置角色朝向移动方向。
 		basis = Basis.looking_at(direction)
 		$AnimationPlayer.speed_scale = 4
 	else:
@@ -35,21 +49,16 @@ func _physics_process(delta):
 	velocity.x = direction.x * speed
 	velocity.z = direction.z * speed
 
-	# Jumping.
+	# 跳跃。
 	if is_on_floor() and Input.is_action_just_pressed(&"jump"):
 		velocity.y += jump_impulse
 
-	# We apply gravity every frame so the character always collides with the ground when moving.
-	# This is necessary for the is_on_floor() function to work as a body can always detect
-	# the floor, walls, etc. when a collision happens the same frame.
+	# 每帧应用重力，确保角色始终与地面碰撞。
 	velocity.y -= fall_acceleration * delta
 	move_and_slide()
 
-	# Here, we check if we landed on top of a mob and if so, we kill it and bounce.
-	# With move_and_slide(), Godot makes the body move sometimes multiple times in a row to
-	# smooth out the character's motion. So we have to loop over all collisions that may have
-	# happened.
-	# If there are no "slides" this frame, the loop below won't run.
+	# 检测是否踩到怪物。
+	# move_and_slide() 可能多次移动角色以平滑运动，需要遍历所有碰撞。
 	for index in range(get_slide_collision_count()):
 		var collision = get_slide_collision(index)
 		if collision.get_collider().is_in_group(&"mob"):
@@ -57,18 +66,19 @@ func _physics_process(delta):
 			if Vector3.UP.dot(collision.get_normal()) > 0.1:
 				mob.squash()
 				velocity.y = bounce_impulse
-				# Prevent this block from running more than once,
-				# which would award the player more than 1 point for squashing a single mob.
+				# 防止同一怪物被多次计分。
 				break
 
-	# This makes the character follow a nice arc when jumping
+	# 使角色在跳跃时呈现弧形。
 	rotation.x = PI / 6 * velocity.y / jump_impulse
 
 
+## 玩家死亡。发出信号并销毁。
 func die():
 	hit.emit()
 	queue_free()
 
 
+## 怪物检测区域碰撞回调。玩家与怪物碰撞时死亡。
 func _on_MobDetector_body_entered(_body):
 	die()

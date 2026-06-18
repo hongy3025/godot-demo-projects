@@ -18,10 +18,12 @@ extends Node  # 注意: 不继承 Node2D 或 Node25D，避免影响排序
 var _parent_node: Node2D
 
 
+## _ready 入口，获取父节点引用并缓存。
 func _ready():
 	_parent_node = get_parent()
 
 
+## _process 入口，每帧检测是否需要执行排序。
 func _process(_delta):
 	if sort_enabled:
 		sort()

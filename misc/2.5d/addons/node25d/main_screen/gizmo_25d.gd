@@ -36,6 +36,7 @@ var _dominant_axis: int = -1
 @onready var _viewport_25d_bg: ColorRect = _viewport_overlay.get_parent()
 
 
+## _process 入口，每帧更新 Gizmo 位置、检测鼠标交互并处理拖拽。
 func _process(_delta: float) -> void:
 	if not _lines:
 		return  # 节点尚未初始化

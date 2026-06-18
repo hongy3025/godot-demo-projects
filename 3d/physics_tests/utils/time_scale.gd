@@ -1,3 +1,4 @@
+## 时间缩放控制器。
 extends HBoxContainer
 
 

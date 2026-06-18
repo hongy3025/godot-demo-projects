@@ -1,13 +1,14 @@
-# This acts as a staging scene shown until the main scene is fully loaded.
+## 加载场景 —— 在主要场景完全加载前显示的过渡场景。
+##
+## 继承自 [Control]，等待两帧后切换到主场景，确保加载文本能够显示。
 extends Control
 
 
+## _ready 入口。等待两帧后加载主场景。
 func _ready() -> void:
 	for i in 2:
-		# Wait 2 frames before starting to change to the main scene,
-		# so that the loading text can be shown instead of the splash screen.
+		# 等待两帧后再切换到主场景，使加载文本能够显示而不是闪现。
 		await get_tree().process_frame
 
-	# Do not use `preload()` to avoid incurring the loading time before the
-	# loading text can be shown.
+	# 不使用 `preload()` 以避免在加载文本显示之前产生加载时间。
 	get_tree().change_scene_to_packed(load("res://test.tscn"))

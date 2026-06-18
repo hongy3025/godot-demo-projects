@@ -14,6 +14,7 @@ extends Sprite2D
 @onready var _oblique_z: Texture2D = preload("res://assets/platform/textures/oblique_z.png")
 
 
+## _process 入口，检测视角切换按键并更新平台贴图。
 func _process(_delta: float) -> void:
 	if not Engine.is_editor_hint():
 		if Input.is_action_pressed(&"forty_five_mode"):

@@ -22,11 +22,13 @@ var _parent_math: PlayerMath25D
 @onready var _run: Texture2D = preload("res://assets/player/textures/run.png")
 
 
+## _ready 入口，获取父节点 Node25D 和子节点 PlayerMath25D 的引用。
 func _ready() -> void:
 	_parent_node25d = get_parent()
 	_parent_math = _parent_node25d.get_child(0)
 
 
+## _process 入口，每帧更新精灵动画和朝向。
 func _process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		return  # 编辑器中不执行动画逻辑

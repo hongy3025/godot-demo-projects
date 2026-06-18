@@ -1,13 +1,14 @@
+## 关节测试 —— 测试不同类型的物理关节。
 extends Test
 
 
-const OPTION_JOINT_TYPE = "Joint Type/%s Joint (%d)"
+const OPTION_JOINT_TYPE = "关节类型/%s 关节 (%d)"
 
-const OPTION_TEST_CASE_BODIES_COLLIDE = "Test case/Attached bodies collide"
-const OPTION_TEST_CASE_WORLD_ATTACHMENT = "Test case/No parent body"
-const OPTION_TEST_CASE_DYNAMIC_ATTACHMENT = "Test case/Parent body is dynamic (no gravity)"
-const OPTION_TEST_CASE_DESTROY_BODY = "Test case/Destroy attached body"
-const OPTION_TEST_CASE_CHANGE_POSITIONS = "Test case/Set body positions after added to scene"
+const OPTION_TEST_CASE_BODIES_COLLIDE = "测试用例/附加物体碰撞"
+const OPTION_TEST_CASE_WORLD_ATTACHMENT = "测试用例/无父物体"
+const OPTION_TEST_CASE_DYNAMIC_ATTACHMENT = "测试用例/父物体动态（无重力）"
+const OPTION_TEST_CASE_DESTROY_BODY = "测试用例/销毁附加物体"
+const OPTION_TEST_CASE_CHANGE_POSITIONS = "测试用例/添加到场景后设置位置"
 
 const BOX_SIZE = Vector3(1.0, 1.0, 1.0)
 
@@ -53,7 +54,7 @@ func _process(_delta: float) -> void:
 	if _update_joint:
 		_update_joint = false
 		await _create_joint()
-		$LabelJointType.text = "Joint Type: " + String(_selected_joint.name)
+		$LabelJointType.text = "关节类型: " + String(_selected_joint.name)
 
 
 func _input(input_event: InputEvent) -> void:

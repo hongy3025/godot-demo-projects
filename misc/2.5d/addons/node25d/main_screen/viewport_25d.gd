@@ -33,6 +33,7 @@ var moving = false
 @onready var gizmo_25d_scene = preload("res://addons/node25d/main_screen/gizmo_25d.tscn")
 
 
+## _ready 入口，初始化视口并同步编辑场景的 World2D。
 func _ready() -> void:
 	# 等待两帧确保场景完全加载
 	for i in 2:
@@ -51,6 +52,7 @@ func _ready() -> void:
 	viewport_2d.world_2d = world_2d
 
 
+## _process 入口，每帧处理视角切换、缩放、视口变换和 Gizmo 管理。
 func _process(_delta: float) -> void:
 	if not editor_interface:  # 编辑器接口未就绪，跳过
 		return
@@ -174,13 +176,16 @@ func _get_zoom_amount() -> float:
 	return zoom_amount
 
 
+## 缩小按钮回调。
 func _on_ZoomOut_pressed() -> void:
 	zoom_level -= 1
 
 
+## 放大按钮回调。
 func _on_ZoomIn_pressed() -> void:
 	zoom_level += 1
 
 
+## 重置缩放按钮回调。
 func _on_ZoomReset_pressed() -> void:
 	zoom_level = 0

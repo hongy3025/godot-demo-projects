@@ -1,6 +1,8 @@
+## A* 寻路网格 —— 使用 AStarGrid2D 实现网格寻路。
+## 继承自 TileMapLayer，标记障碍物并计算路径。
 extends TileMapLayer
 
-# Atlas coordinates in tile set for start/end tiles.
+# 图块集中起点/终点的图块坐标
 const TILE_START_POINT = Vector2i(1, 0)
 const TILE_END_POINT = Vector2i(2, 0)
 
@@ -8,7 +10,7 @@ const CELL_SIZE = Vector2i(64, 64)
 const BASE_LINE_WIDTH: float = 3.0
 const DRAW_COLOR = Color.WHITE * Color(1, 1, 1, 0.5)
 
-# The object for pathfinding on 2D grids.
+# 2D 网格寻路对象
 var _astar := AStarGrid2D.new()
 
 var _start_point := Vector2i()
@@ -16,9 +18,8 @@ var _end_point := Vector2i()
 var _path := PackedVector2Array()
 
 func _ready() -> void:
-	# Region should match the size of the playable area plus one (in tiles).
-	# In this demo, the playable area is 17×9 tiles, so the rect size is 18×10.
-	# Depending on the setup, TileMapLayer's get_used_rect() can also be used.
+	# 区域应匹配可玩区域大小加一（以瓦片为单位）。
+	# 本演示中可玩区域为 17×9 瓦片，因此矩形大小为 18×10。
 	_astar.region = Rect2i(0, 0, 18, 10)
 	_astar.cell_size = CELL_SIZE
 	_astar.offset = CELL_SIZE * 0.5
@@ -27,19 +28,12 @@ func _ready() -> void:
 	_astar.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
 	_astar.update()
 
-	# Iterate over all cells on the tile map layer and mark them as
-	# non-passable.
+	# 遍历所有已使用的瓦片，标记为不可通行
 	for pos in get_used_cells():
 		_astar.set_point_solid(pos)
-		# To skip cells with certain atlas coordinates you can use:
-		# if get_cell_atlas_coords(pos) == Vector2i(42, 23):
-		#     ...
-		# You can also add a "Custom Data Layer" to the tile set to group
-		# tiles and check it here; in the following example using a string:
-		# if get_cell_tile_data(pos).get_custom_data("type") == "obstacle":
-		#     ...
 
 
+## 绘制寻路路径。
 func _draw() -> void:
 	if _path.is_empty():
 		return
@@ -52,10 +46,12 @@ func _draw() -> void:
 		last_point = current_point
 
 
+## 将本地位置取整到最近的瓦片中心。
 func round_local_position(local_position: Vector2i) -> Vector2i:
 	return map_to_local(local_to_map(local_position))
 
 
+## 检查某个位置是否可通行。
 func is_point_walkable(local_position: Vector2) -> bool:
 	var map_position: Vector2i = local_to_map(local_position)
 	if _astar.is_in_boundsv(map_position):
@@ -63,15 +59,19 @@ func is_point_walkable(local_position: Vector2) -> bool:
 	return false
 
 
+## 清除路径和起点/终点标记。
 func clear_path() -> void:
 	if not _path.is_empty():
 		_path.clear()
 		erase_cell(_start_point)
 		erase_cell(_end_point)
-		# Queue redraw to clear the lines and circles.
 		queue_redraw()
 
 
+## 计算从起点到终点的路径。
+## 参数 local_start_point: 起点本地坐标。
+## 参数 local_end_point: 终点本地坐标。
+## 返回: 路径点数组。
 func find_path(local_start_point: Vector2i, local_end_point: Vector2i) -> PackedVector2Array:
 	clear_path()
 
@@ -83,7 +83,6 @@ func find_path(local_start_point: Vector2i, local_end_point: Vector2i) -> Packed
 		set_cell(_start_point, 0, TILE_START_POINT)
 		set_cell(_end_point, 0, TILE_END_POINT)
 
-	# Redraw the lines and circles from the start to the end point.
 	queue_redraw()
 
 	return _path.duplicate()

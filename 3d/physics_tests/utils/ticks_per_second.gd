@@ -1,3 +1,4 @@
+## 每秒物理刻数控制器。
 extends HBoxContainer
 
 

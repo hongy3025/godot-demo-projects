@@ -1,12 +1,13 @@
+## 刚体地面检测测试 —— 测试不同形状刚体在不同地面上的地面检测。
 extends Test
 
 
-const OPTION_BIG = "Floor options/Big"
-const OPTION_SMALL = "Floor options/Small"
+const OPTION_BIG = "地面选项/大"
+const OPTION_SMALL = "地面选项/小"
 
-const SHAPE_CONCAVE = "Collision shapes/Concave"
-const SHAPE_CONVEX = "Collision shapes/Convex"
-const SHAPE_BOX = "Collision shapes/Box"
+const SHAPE_CONCAVE = "碰撞形状/凹多边形"
+const SHAPE_CONVEX = "碰撞形状/凸多边形"
+const SHAPE_BOX = "碰撞形状/盒子"
 
 var _dynamic_shapes_scene: PackedScene
 var _floor_shapes: Dictionary[String, PackedScene] = {}
@@ -65,7 +66,7 @@ func restart_scene() -> void:
 	_current_floor = floor_inst
 	$Floors.add_child(floor_inst)
 
-	$LabelBodyType.text = "Floor Type: " + _current_floor_name.rsplit("/", true, 1)[1] + "\nSize: " + _floor_size
+	$LabelBodyType.text = "地面类型: " + _current_floor_name.rsplit("/", true, 1)[1] + "\n大小: " + _floor_size
 
 
 func get_packed_scene(node: Node) -> PackedScene:

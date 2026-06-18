@@ -1,6 +1,11 @@
+## HDR 调试信息标签 —— 显示 HDR 输出支持状态。
+##
+## 继承自 [Label]，检测并显示 Display Server、渲染设备和窗口的 HDR 支持情况。
+## 根据支持状态改变标签颜色和工具提示。
 extends Label
 
 
+## _process 入口，每帧更新 HDR 状态信息。
 func _process(_delta: float) -> void:
 	var window := get_window()
 

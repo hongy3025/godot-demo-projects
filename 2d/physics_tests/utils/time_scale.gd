@@ -1,3 +1,4 @@
+## 时间缩放滑块 —— 控制 Engine.time_scale 和物理帧率。
 extends HBoxContainer
 
 

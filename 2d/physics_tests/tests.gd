@@ -1,5 +1,7 @@
+## 测试列表 —— 管理所有可用的物理测试场景。
 extends Node
 
+## 测试列表：包含测试 ID 和场景路径。
 var _tests: Array[Dictionary] = [
 	{
 		"id": "Functional Tests/Shapes",

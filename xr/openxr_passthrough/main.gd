@@ -1,12 +1,26 @@
+## 透视模式主节点 —— 管理 VR 与 AR（透视）模式的切换。
+## 继承自 [Node3D]，通过 OpenXR 的环境混合模式在 VR 和 AR 之间切换。
 extends Node3D
 
+## 视口引用。
 @onready var viewport: Viewport = get_viewport()
+## 世界环境引用，用于控制背景渲染。
 @onready var environment: Environment = $WorldEnvironment.environment
+## 淡入淡出消息 3D 节点，用于显示提示信息。
 @onready var fade_message : FadeMessage3D = $XROrigin3D/FadeMessage3D
 
+## 当前是否启用了透视模式。
 var passthrough_enabled: bool = false
 
-## Switch to AR (passthrough)
+
+## 切换到 AR（透视）模式。
+## 返回: [bool] 是否成功切换
+##
+## 逻辑:
+##   1. 获取 OpenXR 接口
+##   2. 查询支持的环境混合模式
+##   3. 优先使用 ALPHA_BLEND，回退到 ADDITIVE
+##   4. 设置视口透明背景和环境颜色为透明
 func switch_to_ar() -> bool:
 	var xr_interface: OpenXRInterface = $StartVR.get_xr_interface()
 	if not xr_interface:
@@ -28,7 +42,14 @@ func switch_to_ar() -> bool:
 	return true
 
 
-## Switch to VR (exit passthrough)
+## 切换到 VR（退出透视）模式。
+## 返回: [bool] 是否成功切换
+##
+## 逻辑:
+##   1. 获取 OpenXR 接口
+##   2. 查询支持的环境混合模式
+##   3. 使用 OPAQUE 模式
+##   4. 恢复视口不透明背景和天空盒环境
 func switch_to_vr() -> bool:
 	var xr_interface: OpenXRInterface = $StartVR.get_xr_interface()
 	if not xr_interface:
@@ -47,16 +68,18 @@ func switch_to_vr() -> bool:
 	return true
 
 
-# Called when our OpenXR session has started.
+## OpenXR 会话开始回调 —— 启动时自动切换到透视模式。
 func _on_start_vr_session_started():
-	# Make sure we're in passthrough mode.
 	passthrough_enabled = switch_to_ar()
 
 
-# Called when a button is pressed on either controller.
+## 手柄按钮释放回调 —— 切换透视/VR 模式。
+## 参数:
+##   action_name: 操作名称
+##
+## 当按下 ax_button 时，在透视和 VR 模式之间切换。
 func _on_button_released(action_name):
 	if action_name == "ax_button":
-		# Toggle passthrough
 		if passthrough_enabled:
 			switch_to_vr()
 			passthrough_enabled = false

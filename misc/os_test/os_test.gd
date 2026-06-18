@@ -1,15 +1,21 @@
+## 系统信息测试 —— 收集并显示操作系统和硬件的各种信息。
+##
+## 继承自 [Node]，在 RichTextLabel 中展示音频、显示、引擎、环境、硬件、
+## 输入、本地化、软件、安全、目录等各类系统信息。
+## 同时将信息输出到终端，方便复制和 headless 模式使用。
 extends Node
 
 
 @onready var rtl: RichTextLabel = $HBoxContainer/Features
 @onready var csharp_test: Node = $CSharpTest
 
-# Line number for alternate line coloring. Incremented by 1 each time a line is added
-# (ignoring headers).
+# 行号计数器，用于交替行背景色（每添加一行递增 1，忽略标题行）
 var line_count: int = 0
 
 
-# Returns a human-readable string from a date and time, date, or time dictionary.
+## 将日期时间字典转换为可读字符串。
+## 参数: date - 包含 year/month/day/hour/minute/second 的字典
+## 返回: 格式化后的日期时间字符串
 func datetime_to_string(date: Dictionary) -> void:
 	if (
 		date.has("year")
@@ -19,7 +25,7 @@ func datetime_to_string(date: Dictionary) -> void:
 		and date.has("minute")
 		and date.has("second")
 	):
-		# Date and time.
+		# 完整日期时间
 		return "{year}-{month}-{day} {hour}:{minute}:{second}".format({
 				year = str(date.year).pad_zeros(2),
 				month = str(date.month).pad_zeros(2),
@@ -29,14 +35,14 @@ func datetime_to_string(date: Dictionary) -> void:
 				second = str(date.second).pad_zeros(2),
 			})
 	elif date.has("year") and date.has("month") and date.has("day"):
-		# Date only.
+		# 仅日期
 		return "{year}-{month}-{day}".format({
 				year = str(date.year).pad_zeros(2),
 				month = str(date.month).pad_zeros(2),
 				day = str(date.day).pad_zeros(2),
 			})
 	else:
-		# Time only.
+		# 仅时间
 		return "{hour}:{minute}:{second}".format({
 				hour = str(date.hour).pad_zeros(2),
 				minute = str(date.minute).pad_zeros(2),
@@ -44,9 +50,11 @@ func datetime_to_string(date: Dictionary) -> void:
 			})
 
 
+## 扫描并返回已连接的 MIDI 输入设备列表。
+## 返回: 逗号分隔的 MIDI 设备名称字符串
 func scan_midi_inputs() -> String:
 	if DisplayServer.get_name() == "headless":
-		# Workaround for <https://github.com/godotengine/godot/issues/52821>.
+		# 解决 https://github.com/godotengine/godot/issues/52821
 		return ""
 
 	OS.open_midi_inputs()
@@ -55,22 +63,24 @@ func scan_midi_inputs() -> String:
 	return devices
 
 
+## 在 RichTextLabel 中添加标题行。
 func add_header(header: String) -> void:
 	rtl.append_text("\n[font_size=24][color=#5cf]{header}[/color][/font_size]\n[font_size=1]\n[/font_size]".format({
 			header = header,
 		}))
 
-	# Also print to the terminal for easy copy-pasting and headless usage.
+	# 同时输出到终端，方便复制和 headless 使用
 	print_rich("\n[b][u][color=blue]{header}[/color][/u][/b]\n".format({
 			header = header,
 		}))
 
 
+## 在 RichTextLabel 中添加键值对行。
 func add_line(key: String, value: Variant) -> void:
 	line_count += 1
 	var original_value: Variant = value
 	if typeof(original_value) == TYPE_BOOL:
-		# Colorize boolean values.
+		# 布尔值着色
 		value = "[color=6f7]true[/color]" if original_value else "[color=#f76]false[/color]"
 
 	rtl.append_text("{bgcolor}[color=#9df]{key}:[/color] {value}{bgcolor_end}\n".format({
@@ -80,18 +90,19 @@ func add_line(key: String, value: Variant) -> void:
 			bgcolor_end = "[/bgcolor]" if line_count % 2 == 0 else "",
 		}))
 	if typeof(original_value) == TYPE_BOOL:
-		# Colorize boolean values (`print_rich()`-friendly version, using basic colors only).
+		# 布尔值着色（print_rich 兼容版本，仅使用基本颜色）
 		value = "[color=green]true[/color]" if original_value else "[color=red]false[/color]"
 
-	# Also print to the terminal for easy copy-pasting and headless usage.
+	# 同时输出到终端，方便复制和 headless 使用
 	print_rich("[b][color=cyan]{key}:[/color][/b] {value}".format({
 			key = key,
 			value = value if str(value) != "" else "[code](empty)[/code]",
 		}))
 
 
+## _ready 入口，收集并显示所有系统信息。
 func _ready() -> void:
-	# Grab focus so that the list can be scrolled (for keyboard/controller-friendly navigation).
+	# 获取焦点以便键盘/手柄滚动列表
 	rtl.grab_focus()
 
 	add_header("Audio")
@@ -147,7 +158,7 @@ func _ready() -> void:
 
 	add_header("Environment")
 	add_line("Value of `PATH`", OS.get_environment("PATH"))
-	# Check for case-sensitivity behavior across platforms.
+	# 检查跨平台的大小写敏感行为
 	add_line("Value of `path`", OS.get_environment("path"))
 
 	add_header("Hardware")
@@ -215,7 +226,7 @@ func _ready() -> void:
 	add_line("Adapter name", RenderingServer.get_video_adapter_name())
 	add_line("Adapter vendor", RenderingServer.get_video_adapter_vendor())
 	if RenderingServer.get_current_rendering_method() != "gl_compatibility":
-		# Querying the adapter type isn't supported in Compatibility.
+		# Compatibility 渲染器不支持查询适配器类型
 		add_line("Adapter type", [
 				"Other (Unknown)",
 				"Integrated",

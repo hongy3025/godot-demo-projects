@@ -1,3 +1,5 @@
+## 刚体控制器 —— 使用 RigidBody2D 实现角色控制。
+## 演示如何在 RigidBody2D 上实现平台游戏角色的移动和跳跃。
 extends RigidBody2D
 
 var _initial_velocity := Vector2.ZERO
@@ -25,7 +27,7 @@ func _physics_process(delta: float) -> void:
 	elif not _keep_velocity:
 		_velocity.x = 0.0
 
-	# Handle horizontal controls.
+	# 水平控制
 	if Input.is_action_pressed(&"character_left"):
 		if position.x > 0.0:
 			_velocity.x = -_motion_speed
@@ -37,14 +39,12 @@ func _physics_process(delta: float) -> void:
 			_keep_velocity = false
 			_constant_velocity = Vector2.ZERO
 
-	# Handle jump controls and gravity.
+	# 跳跃和重力
 	if is_on_floor():
 		if not _jumping and Input.is_action_just_pressed(&"character_jump"):
-			# Start jumping.
 			_jumping = true
 			_velocity.y = -_jump_force
 		elif not _jumping:
-			# Reset gravity.
 			_velocity.y = 0.0
 	else:
 		_velocity.y += _gravity_force * delta * 60.0
@@ -60,11 +60,11 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 	for i in contacts:
 		var normal := state.get_contact_local_normal(i)
 
-		# Detect floor.
+		# 检测地面
 		if acos(normal.dot(Vector2.UP)) <= deg_to_rad(_floor_max_angle) + 0.01:
 			_on_floor = true
 
-		# Detect ceiling.
+		# 检测天花板
 		if acos(normal.dot(-Vector2.UP)) <= deg_to_rad(_floor_max_angle) + 0.01:
 			_jumping = false
 			_velocity.y = 0.0

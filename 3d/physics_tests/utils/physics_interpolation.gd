@@ -1,3 +1,4 @@
+## 物理插值开关按钮。
 extends CheckButton
 
 

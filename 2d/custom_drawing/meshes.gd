@@ -1,12 +1,12 @@
-# This is a `@tool` script so that the custom 2D drawing can be seen in the editor.
+## 网格绘制演示 —— 使用 _draw() 方法绘制 3D 网格。
+## @tool 脚本使自定义 2D 绘制在编辑器中可见。
 @tool
 extends Panel
 
-# Unused, but defined anyway to avoid script errors when the parent sets the property.
+## 未使用但保留定义以避免父节点设置属性时出错。
 var use_antialiasing: bool = false
 
-# You must hold a reference to the Resources either as member variables or within an Array or Dictionary.
-# Otherwise, they get freed automatically and the renderer won't be able to draw them.
+# 必须持有资源的引用作为成员变量或在数组/字典中，否则会被自动释放。
 var text_mesh := TextMesh.new()
 var noise_texture := NoiseTexture2D.new()
 var gradient_texture := GradientTexture2D.new()
@@ -15,9 +15,8 @@ var multi_mesh := MultiMesh.new()
 
 func _ready() -> void:
 	text_mesh.text = "TextMesh"
-	# In 2D, 1 unit equals 1 pixel, so the default size at which PrimitiveMeshes are displayed is tiny.
-	# Use much larger mesh size to compensate, or use `draw_set_transform()` before using `draw_mesh()`
-	# to scale the draw command.
+	# 在 2D 中，1 单位 = 1 像素，PrimitiveMesh 的默认大小非常小。
+	# 使用更大的网格尺寸或 draw_set_transform() 缩放绘制命令。
 	text_mesh.pixel_size = 2.5
 
 	noise_texture.seamless = true
@@ -48,12 +47,7 @@ func _draw() -> void:
 	const margin := Vector2(300, 70)
 	var offset := Vector2()
 
-	# `draw_set_transform()` is a stateful command: it affects *all* `draw_` methods within this
-	# `_draw()` function after it. This can be used to translate, rotate, or scale `draw_` methods
-	# that don't offer dedicated parameters for this (such as `draw_primitive()` not having a position parameter).
-	# To reset back to the initial transform, call `draw_set_transform(Vector2())`.
-	#
-	# Flip drawing on the Y axis so the text appears upright.
+	# 沿 Y 轴翻转绘制，使文本正向显示
 	draw_set_transform(margin + offset, 0.0, Vector2(1, -1))
 	draw_mesh(text_mesh, noise_texture)
 

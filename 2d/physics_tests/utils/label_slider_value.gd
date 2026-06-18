@@ -1,3 +1,4 @@
+## 滑块值标签 —— 实时显示关联滑块的值。
 @tool
 extends Label
 

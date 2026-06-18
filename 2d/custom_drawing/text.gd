@@ -1,7 +1,9 @@
-# This is a `@tool` script so that the custom 2D drawing can be seen in the editor.
+## 文本绘制演示 —— 使用 _draw() 方法绘制字符和字符串。
+## @tool 脚本使自定义 2D 绘制在编辑器中可见。
 @tool
 extends Panel
 
+## 是否启用抗锯齿。
 var use_antialiasing: bool = false
 
 
@@ -14,12 +16,11 @@ func _draw() -> void:
 	var offset := Vector2()
 	var advance := Vector2()
 	for character in STRING:
-		# Draw each character with a random pastel color.
-		# Notice how the advance calculated on the loop's previous iteration is used as an offset here.
+		# 用随机柔和颜色绘制每个字符
+		# 注意上一轮循环计算的 advance 用作偏移
 		draw_char(font, margin + offset + advance, character, FONT_SIZE, Color.from_hsv(randf(), 0.4, 1.0))
 
-		# Get the glyph index of the character we've just drawn, so we can retrieve the glyph advance.
-		# This determines the spacing between glyphs so the next character is positioned correctly.
+		# 获取刚绘制的字符的字形索引，用于计算字形间距
 		var glyph_idx := TextServerManager.get_primary_interface().font_get_glyph_index(
 				get_theme_default_font().get_rids()[0],
 				FONT_SIZE,
@@ -33,8 +34,7 @@ func _draw() -> void:
 			).x
 
 	offset += Vector2(0, 32)
-	# When drawing a font outline, it must be drawn *before* the main text.
-	# This way, the outline appears behind the main text.
+	# 绘制字体轮廓时，必须在主文本之前绘制，使轮廓出现在主文本后方
 	draw_string_outline(
 			font,
 			margin + offset,
@@ -45,10 +45,8 @@ func _draw() -> void:
 			12,
 			Color.ORANGE.darkened(0.6)
 		)
-	# NOTE: Use `draw_multiline_string()` to draw strings that contain line breaks (`\n`) or with
-	# automatic line wrapping based on the specified width.
-	# A width of `-1` is used here, which means "no limit". If width is limited, the end of the string
-	# will be cut off if it doesn't fit within the specified width.
+	# 使用 draw_multiline_string() 可绘制含换行符或自动换行的字符串。
+	# 宽度为 -1 表示"无限制"。
 	draw_string(
 			font,
 			margin + offset,

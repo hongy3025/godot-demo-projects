@@ -1,17 +1,23 @@
+## 自定义日志 UI —— 将引擎日志重定向到 RichTextLabel 显示。
+##
+## 继承自 [RichTextLabel]，通过自定义 Logger 捕获引擎的日志消息和错误，
+## 在 UI 中以富文本格式显示，支持不同错误类型的颜色区分。
 extends RichTextLabel
 
+## 自定义日志记录器实例
 var logger := CustomLogger.new()
 
 
-# Custom loggers must be thread-safe, as they may be called from non-main threads.
-# We use `call_deferred()` to call methods on nodes to ensure they are modified
-# from the main thread, as thread guards could prevent the methods from being
-# called successfully otherwise.
+## 自定义日志记录器类，继承自 [Logger]。
+## 必须保证线程安全，因为可能从非主线程调用。
+## 使用 call_deferred() 确保节点方法在主线程调用。
 class CustomLogger extends Logger:
+	## 日志消息回调，将消息追加到 RichTextLabel。
 	func _log_message(message: String, _error: bool) -> void:
 		CustomLoggerUI.get_node(^"Panel/RichTextLabel").call_deferred(&"append_text", message)
 
 
+	## 错误消息回调，格式化并显示错误/警告/脚本错误/着色器错误。
 	func _log_error(
 			function: String,
 			file: String,
@@ -23,8 +29,7 @@ class CustomLogger extends Logger:
 			script_backtraces: Array[ScriptBacktrace]
 	) -> void:
 		var prefix: String = ""
-		# The column at which to print the trace. Should match the length of the
-		# unformatted text above it.
+		# 回溯打印的缩进列，应与上方未格式化文本长度匹配
 		var trace_indent := 0
 
 		match error_type:
@@ -58,15 +63,14 @@ class CustomLogger extends Logger:
 			)
 
 
-# Use `_init()` to register the logger as early as possible, which ensures that messages
-# printed early are taken into account. However, even when using `_init()`, the engine's own
-# initialization messages are not accessible.
+## 使用 _init() 尽早注册日志记录器，确保早期消息也能被捕获。
+## 但即使使用 _init()，引擎自身的初始化消息仍不可访问。
 func _init() -> void:
 	OS.add_logger(logger)
 
 
-# Removing the logger happens automatically when the project exits by default.
-# In case you need to remove a custom logger earlier, you can use `OS.remove_logger()`.
-# Doing so can also avoid object leak warnings that may be printed on exit.
+## 移除日志记录器在项目退出时自动完成。
+## 如需提前移除可使用 OS.remove_logger()。
+## 这也可以避免退出时可能打印的对象泄漏警告。
 func _exit_tree() -> void:
 	OS.remove_logger(logger)

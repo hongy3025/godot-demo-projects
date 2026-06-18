@@ -1,59 +1,69 @@
+## FPS 示例玩家控制器 —— 第一人称射击角色。
+##
+## 继承自 [CharacterBody3D]，实现完整的 FPS 控制：
+## - WASD 移动、冲刺、跳跃
+## - 鼠标视角、瞄准（右键）、射击（左键）
+## - 身体倾斜（Q/E）
+## - 子弹发射
 extends CharacterBody3D
 
-# Walking variables.
+# 行走参数。
 const norm_grav = -38.8
 const MAX_SPEED = 22
 const JUMP_SPEED = 26
 const ACCEL = 8.5
-# Sprinting variables. Similar to the variables above, just allowing for quicker movement
+# 冲刺参数。
 const MAX_SPRINT_SPEED = 34
 const SPRINT_ACCEL = 18
-# How fast we slow down, and the steepest angle we can climb.
+# 减速度和最大可攀爬坡度。
 const DEACCEL = 28
 const MAX_SLOPE_ANGLE = 40
-# How fast the bullets launch
+# 子弹发射参数。
 const LEFT_MOUSE_FIRE_TIME = 0.15
 const BULLET_SPEED = 100
 
+## 当前速度向量。
 var vel = Vector3()
-# A vector for storing the direction the player intends to walk towards.
+## 玩家意图移动的方向向量。
 var dir = Vector3()
-# A boolean to track whether or not we are sprinting
+## 是否正在冲刺。
 var is_sprinting = false
 
-# You may need to adjust depending on the sensitivity of your mouse
+## 鼠标灵敏度（可能需要根据个人习惯调整）。
 var MOUSE_SENSITIVITY = 0.08
 
-# A boolean for tracking whether the jump button is down
+## 跳跃按钮是否按下。
 var jump_button_down = false
 
-# The current lean value (our position on the lean track) and the path follow node
+## 当前倾斜值（在倾斜轨道上的位置）。
 var lean_value = 0.5
 
-# A variable for tracking if the right mouse button is down.
+## 右键是否按下。
 var right_mouse_down = false
-# A variable for tracking if we can fire using the left mouse button
+## 左键射击计时器。
 var left_mouse_timer = 0
 
-# A boolean for tracking whether we can change animations or not
+## 是否可以切换动画。
 var anim_done = true
-# The current animation name
+## 当前动画名称。
 var current_anim = "Starter"
 
-# The simple bullet rigidbody
+## 简单子弹场景预加载。
 var simple_bullet = preload("res://fps/simple_bullet.tscn")
 
-# We need the camera for getting directional vectors. We rotate ourselves on the Y-axis using
-# the camera_holder to avoid rotating on more than one axis at a time.
+## 摄像机支架节点，用于控制 Y 轴旋转。
 @onready var camera_holder = $CameraHolder
+## 实际摄像机节点。
 @onready var camera = $CameraHolder/LeanPath/PathFollow3D/IK_LookAt_Chest/Camera3D
+## 路径跟随节点，用于倾斜效果。
 @onready var path_follow_node = $CameraHolder/LeanPath/PathFollow3D
-# The animation player for aiming down the sights.
+## 动画播放器，用于瞄准动画。
 @onready var anim_player = $CameraHolder/AnimationPlayer
-# The end of the pistol.
+## 手枪枪口端点，用于子弹发射位置。
 @onready var pistol_end = $CameraHolder/Weapon/Pistol/PistolEnd
 
 
+## _ready 入口。连接动画完成信号并捕获鼠标。
 func _ready():
 	anim_player.animation_finished.connect(animation_finished)
 
@@ -62,19 +72,26 @@ func _ready():
 	set_process_input(true)
 
 
+## _physics_process 入口。每物理帧处理输入和移动。
+##
+## 参数:
+##   delta: 物理帧时间间隔
 func _physics_process(delta):
 	process_input(delta)
 	process_movement(delta)
 
 
+## 处理输入。包括移动方向、瞄准、射击、冲刺、跳跃和倾斜。
+##
+## 参数:
+##   delta: 帧时间间隔
 func process_input(delta):
-	# Reset dir, so our previous movement does not effect us
+	# 重置方向向量。
 	dir = Vector3()
-	# Get the camera's global transform so we can use its directional vectors
+	# 获取摄像机的全局变换以使用其方向向量。
 	var cam_xform = camera.get_global_transform()
 
-	# ----------------------------------
-	# Walking
+	# 行走方向
 	if Input.is_key_pressed(KEY_UP) or Input.is_key_pressed(KEY_W):
 		dir += -cam_xform.basis[2]
 	if Input.is_key_pressed(KEY_DOWN) or Input.is_key_pressed(KEY_S):
@@ -90,6 +107,7 @@ func process_input(delta):
 		else:
 			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
+	# 右键瞄准。
 	if Input.is_mouse_button_pressed(2):
 		if not right_mouse_down:
 			right_mouse_down = true
@@ -106,29 +124,26 @@ func process_input(delta):
 	else:
 		right_mouse_down = false
 
+	# 左键射击。
 	if Input.is_mouse_button_pressed(1):
 		if left_mouse_timer <= 0:
 			left_mouse_timer = LEFT_MOUSE_FIRE_TIME
 
-			# Create a bullet
+			# 创建子弹。
 			var new_bullet = simple_bullet.instantiate()
 			get_tree().root.add_child(new_bullet)
 			new_bullet.global_transform = pistol_end.global_transform
 			new_bullet.linear_velocity = new_bullet.global_transform.basis.z * BULLET_SPEED
 	if left_mouse_timer > 0:
 		left_mouse_timer -= delta
-	# ----------------------------------
 
-	# ----------------------------------
-	# Sprinting
+	# 冲刺。
 	if Input.is_key_pressed(KEY_SHIFT):
 		is_sprinting = true
 	else:
 		is_sprinting = false
-	# ----------------------------------
 
-	# ----------------------------------
-	# Jumping
+	# 跳跃。
 	if Input.is_key_pressed(KEY_SPACE):
 		if not jump_button_down:
 			jump_button_down = true
@@ -136,10 +151,8 @@ func process_input(delta):
 				vel.y = JUMP_SPEED
 	else:
 		jump_button_down = false
-	# ----------------------------------
 
-	# ----------------------------------
-	# Leaning
+	# 身体倾斜。
 	if Input.is_key_pressed(KEY_Q):
 		lean_value += 1.2 * delta
 	elif Input.is_key_pressed(KEY_E):
@@ -162,9 +175,12 @@ func process_input(delta):
 	else:
 		var lerp_value = (lean_value - 0.5) * 2
 		path_follow_node.rotation_degrees.z = (-20 * lerp_value)
-	# ----------------------------------
 
 
+## 处理角色移动。应用重力、加速/减速并执行移动。
+##
+## 参数:
+##   delta: 帧时间间隔
 func process_movement(delta):
 	var grav = norm_grav
 
@@ -196,18 +212,23 @@ func process_movement(delta):
 	vel.x = hvel.x
 	vel.z = hvel.z
 
-	# TODO: This information should be set to the CharacterBody properties instead of arguments.
 	velocity = vel
 	move_and_slide()
 
 
-# Mouse based camera movement
+## 鼠标视角控制。
+##
+## 参数:
+##   event: 输入事件对象
+##
+## 使用鼠标相对运动旋转角色和摄像机支架。
+## 摄像机俯仰限制在 -40 到 60 度之间。
 func _input(event):
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		rotate_y(deg_to_rad(event.screen_relative.x * MOUSE_SENSITIVITY * -1))
 		camera_holder.rotate_x(deg_to_rad(event.screen_relative.y * MOUSE_SENSITIVITY))
 
-		# We need to clamp the camera's rotation so we cannot rotate ourselves upside down
+		# 限制摄像机旋转角度，防止上下颠倒。
 		var camera_rot = camera_holder.rotation_degrees
 		if camera_rot.x < -40:
 			camera_rot.x = -40
@@ -220,5 +241,6 @@ func _input(event):
 		pass
 
 
+## 动画播放完成回调。标记动画状态为可切换。
 func animation_finished(_anim):
 	anim_done = true

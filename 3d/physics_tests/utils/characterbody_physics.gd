@@ -1,3 +1,4 @@
+## CharacterBody3D 物理测试辅助 —— 支持地面吸附和斜坡停止。
 extends CharacterBody3D
 
 

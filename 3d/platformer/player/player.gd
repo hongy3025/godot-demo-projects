@@ -1,52 +1,92 @@
+## 平台游戏玩家角色 —— 第三人称 3D 平台游戏主角。
+##
+## 继承自 [CharacterBody3D]，实现完整的平台游戏控制：
+## - WASD 移动（基于摄像机方向）
+## - 跳跃（可释放跳跃键降低跳跃高度）
+## - 射击
+## - 金币收集
+## - 动画混合（行走/奔跑/空中/射击）
 class_name Player
 extends CharacterBody3D
 
+## 动画状态枚举。
 enum _Anim {
-	FLOOR,
-	AIR,
+	FLOOR,  ## 地面状态
+	AIR,    ## 空中状态
 }
 
+## 射击动画持续时间。
 const SHOOT_TIME: float = 1.5
+## 射击缩放系数。
 const SHOOT_SCALE: float = 2.0
+## 角色模型缩放。
 const CHAR_SCALE := Vector3(0.3, 0.3, 0.3)
+## 最大移动速度。
 const MAX_SPEED: float = 6.0
+## 转向速度。
 const TURN_SPEED: float = 40.0
+## 跳跃速度。
 const JUMP_VELOCITY: float = 12.5
+## 子弹速度。
 const BULLET_SPEED: float = 20.0
+## 空中是否减速。
 const AIR_IDLE_DEACCEL: bool = false
+## 加速度。
 const ACCEL: float = 14.0
+## 减速度。
 const DEACCEL: float = 14.0
+## 空中加速度系数。
 const AIR_ACCEL_FACTOR: float = 0.5
+## 急转弯角度阈值。
 const SHARP_TURN_THRESHOLD: float = deg_to_rad(140.0)
 
+## 移动方向向量。
 var movement_dir := Vector3()
+## 是否正在跳跃。
 var jumping: bool = false
+## 上一帧是否在射击。
 var prev_shoot: bool = false
+## 射击动画混合值。
 var shoot_blend: float = 0.0
 
-# Number of coins collected.
+## 收集的金币数量。
 var coins: int = 0
 
+## 初始位置，用于重置。
 @onready var initial_position := position
+## 重力向量（从项目设置读取）。
 @onready var gravity: Vector3 = ProjectSettings.get_setting("physics/3d/default_gravity") * \
 		ProjectSettings.get_setting("physics/3d/default_gravity_vector")
 
+## 摄像机节点引用。
 @onready var _camera := $Target/Camera3D as Camera3D
+## 动画树节点引用。
 @onready var _animation_tree := $AnimationTree as AnimationTree
 
 
+## _physics_process 入口。每物理帧处理移动、跳跃、射击和动画。
+##
+## 参数:
+##   delta: 物理帧时间间隔
+##
+## 核心逻辑：
+## 1. 处理位置重置和金币显示
+## 2. 应用重力
+## 3. 读取 WASD 输入并转换为摄像机相对方向
+## 4. 地面移动：加速/减速/转向/急转弯检测
+## 5. 空中移动：较低加速度/可释放跳跃键降低跳跃高度
+## 6. 射击：创建子弹实例
+## 7. 更新动画树参数
 func _physics_process(delta: float) -> void:
 	if Input.is_action_pressed(&"reset_position") or global_position.y < -12:
-		# Player hit the reset button or fell off the map.
+		# 玩家按下重置键或掉落出地图。
 		position = initial_position
 		velocity = Vector3.ZERO
-		# We teleported the player on the lines above. Reset interpolation
-		# to prevent it from interpolating from the old player position
-		# to the new position.
+		# 传送玩家后重置物理插值。
 		reset_physics_interpolation()
 
-	# Update coin count and its "parallax" copies.
-	# This gives text a pseudo-3D appearance while still using Label3D instead of the more limited TextMesh.
+	# 更新金币数量及其"视差"副本。
+	# 使用多个 Label3D 副本实现伪 3D 效果。
 	%CoinCount.text = str(coins)
 	%CoinCount.get_node(^"Parallax").text = str(coins)
 	%CoinCount.get_node(^"Parallax2").text = str(coins)
@@ -63,7 +103,7 @@ func _physics_process(delta: float) -> void:
 	var horizontal_direction := horizontal_velocity.normalized()
 	var horizontal_speed := horizontal_velocity.length()
 
-	# Player input.
+	# 玩家输入。
 	var cam_basis := _camera.get_global_transform().basis
 	var movement_vec2 := Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
 	var movement_direction := cam_basis * Vector3(movement_vec2.x, 0, movement_vec2.y)
@@ -136,7 +176,7 @@ func _physics_process(delta: float) -> void:
 			horizontal_velocity = horizontal_direction * horizontal_speed
 
 		if Input.is_action_just_released(&"jump") and velocity.y > 0.0:
-			# Reduce jump height if releasing the jump key before reaching the apex.
+			# 在到达最高点前释放跳跃键可降低跳跃高度。
 			vertical_velocity *= 0.7
 
 	if jumping and vertical_velocity < 0:
@@ -168,10 +208,10 @@ func _physics_process(delta: float) -> void:
 	prev_shoot = shoot_attempt
 
 	if is_on_floor():
-		# How much the player should be blending between the "idle" and "walk/run" animations.
+		# 玩家在"空闲"和"行走/奔跑"动画之间的混合量。
 		_animation_tree[&"parameters/run/blend_amount"] = horizontal_speed / MAX_SPEED
 
-		# How much the player should be running (as opposed to walking). 0.0 = fully walking, 1.0 = fully running.
+		# 玩家奔跑程度（相对于行走）。0.0=完全行走，1.0=完全奔跑。
 		_animation_tree[&"parameters/speed/blend_amount"] = minf(1.0, horizontal_speed / (MAX_SPEED * 0.5))
 
 	_animation_tree[&"parameters/state/blend_amount"] = anim
@@ -179,6 +219,16 @@ func _physics_process(delta: float) -> void:
 	_animation_tree[&"parameters/gun/blend_amount"] = minf(shoot_blend, 1.0)
 
 
+## 平滑调整朝向。将 facing 向量逐步转向 target 向量。
+##
+## 参数:
+##   facing: 当前朝向向量
+##   target: 目标朝向向量
+##   step: 时间步长
+##   adjust_rate: 调整速率
+##   current_gn: 当前上方向
+##
+## 返回: [Vector3] 调整后的朝向向量
 func adjust_facing(facing: Vector3, target: Vector3, step: float, adjust_rate: float, \
 		current_gn: Vector3) -> Vector3:
 	var normal := target

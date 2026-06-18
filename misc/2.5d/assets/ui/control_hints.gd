@@ -5,6 +5,7 @@
 extends Control
 
 
+## _input 入口，监听输入事件切换控制提示的可见性。
 func _input(input_event: InputEvent) -> void:
 	if input_event.is_action_pressed(&"toggle_control_hints"):
 		visible = not visible

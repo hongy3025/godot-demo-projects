@@ -1,22 +1,21 @@
-# This is a `@tool` script so that the custom 2D drawing can be seen in the editor.
+## 线条与圆形绘制演示 —— 使用 _draw() 方法绘制各种线条、圆形和弧线。
+## @tool 脚本使自定义 2D 绘制在编辑器中可见。
 @tool
 extends Panel
 
+## 是否启用抗锯齿。
 var use_antialiasing: bool = false
 
 
 func _draw() -> void:
 	var margin := Vector2(200, 50)
 
-	# Line width of `-1.0` is only usable with draw antialiasing disabled,
-	# as it uses hardware line drawing as opposed to polygon-based line drawing.
-	# Automatically use polygon-based line drawing when needed to avoid runtime warnings.
-	# We also use a line width of `0.5` instead of `1.0` to better match the appearance
-	# of non-antialiased line drawing, as draw antialiasing tends to make lines look thicker.
+	# 线宽为 -1.0 仅在禁用抗锯齿时可用，此时使用硬件线条绘制而非多边形线条绘制。
+	# 需要时自动使用多边形线条绘制以避免运行时警告。
+	# 使用 0.5 而非 1.0 的线宽以更好地匹配非抗锯齿线条的外观。
 	var line_width_thin := 0.5 if use_antialiasing else -1.0
 
-	# Make thick lines 1 pixel thinner when draw antialiasing is enabled,
-	# as draw antialiasing tends to make lines look thicker.
+	# 启用抗锯齿时，粗线条减薄 1 像素以补偿抗锯齿导致的视觉增粗
 	var antialiasing_width_offset := 1.0 if use_antialiasing else 0.0
 
 	var offset := Vector2()
@@ -43,24 +42,18 @@ func _draw() -> void:
 	offset += Vector2(100, 0)
 	draw_circle(margin + offset, 40, Color.ORANGE, false, 6.0 - antialiasing_width_offset, use_antialiasing)
 
-	# Draw a filled circle. The width parameter is ignored for filled circles (it's set to `-1.0` to avoid warnings).
-	# We also reduce the radius by half the antialiasing width offset.
-	# Otherwise, the circle becomes very slightly larger when draw antialiasing is enabled.
+	# 绘制实心圆，宽度参数被忽略（设为 -1.0 以避免警告）
+	# 半径减去抗锯齿宽度偏移的一半以补偿视觉增粗
 	offset += Vector2(100, 0)
 	draw_circle(margin + offset, 40 - antialiasing_width_offset * 0.5, Color.ORANGE, true, -1.0, use_antialiasing)
 
-	# `draw_set_transform()` is a stateful command: it affects *all* `draw_` methods within this
-	# `_draw()` function after it. This can be used to translate, rotate, or scale `draw_` methods
-	# that don't offer dedicated parameters for this (such as `draw_primitive()` not having a position parameter).
-	# To reset back to the initial transform, call `draw_set_transform(Vector2())`.
-	#
-	# Draw a horizontally stretched circle.
+	# 绘制水平拉伸的圆形
 	offset += Vector2(200, 0)
 	draw_set_transform(margin + offset, 0.0, Vector2(3.0, 1.0))
 	draw_circle(Vector2(), 40, Color.ORANGE, false, line_width_thin, use_antialiasing)
 	draw_set_transform(Vector2())
 
-	# Draw a quarter circle (`TAU` represents a full turn in radians).
+	# 绘制四分之一圆弧（TAU 表示一周的弧度）
 	const POINT_COUNT_HIGH = 24
 	offset = Vector2(0, 200)
 	draw_arc(margin + offset, 60, 0, 0.25 * TAU, POINT_COUNT_HIGH, Color.YELLOW, line_width_thin, use_antialiasing)
@@ -71,7 +64,7 @@ func _draw() -> void:
 	offset += Vector2(100, 0)
 	draw_arc(margin + offset, 60, 0, 0.25 * TAU, POINT_COUNT_HIGH, Color.YELLOW, 6.0 - antialiasing_width_offset, use_antialiasing)
 
-	# Draw a three quarters of a circle with a low point count, which gives it an angular look.
+	# 使用低点数绘制四分之三圆弧，呈现有棱角的外观
 	const POINT_COUNT_LOW = 7
 	offset += Vector2(125, 30)
 	draw_arc(margin + offset, 40, -0.25 * TAU, 0.5 * TAU, POINT_COUNT_LOW, Color.YELLOW, line_width_thin, use_antialiasing)
@@ -82,7 +75,7 @@ func _draw() -> void:
 	offset += Vector2(100, 0)
 	draw_arc(margin + offset, 40, -0.25 * TAU, 0.5 * TAU, POINT_COUNT_LOW, Color.YELLOW, 6.0 - antialiasing_width_offset, use_antialiasing)
 
-	# Draw a horizontally stretched arc.
+	# 绘制水平拉伸的弧线
 	offset += Vector2(200, 0)
 	draw_set_transform(margin + offset, 0.0, Vector2(3.0, 1.0))
 	draw_arc(Vector2(), 40, -0.25 * TAU, 0.5 * TAU, POINT_COUNT_LOW, Color.YELLOW, line_width_thin, use_antialiasing)
