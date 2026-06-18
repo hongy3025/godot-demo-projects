@@ -1,15 +1,28 @@
+## 手柄重映射向导 —— 交互式手柄按键映射工具。
+##
+## 继承自 [Node]，引导用户逐步映射手柄的每个按键和摇杆。
+## 支持全轴/半轴映射、轴反转、跳过未映射按键等功能。
+## 最终生成 SDL2 格式的映射字符串。
 extends Node
 
 
+## 摇杆死区阈值
 const DEADZONE = 0.3
 
+## 当前手柄索引
 var joy_index: int = -1
+## 当前手柄 GUID
 var joy_guid: String = ""
+## 当前手柄名称
 var joy_name: String = ""
 
+## 需要映射的按键列表（来自 JoyMapping.BASE）
 var steps: Array = JoyMapping.BASE.keys()
+## 当前步骤索引
 var cur_step: int = -1
+## 当前映射字典
 var cur_mapping: Dictionary = {}
+## 最后生成的映射字符串
 var last_mapping: String = ""
 
 @onready var joy_buttons: Node2D = $Mapping/Margin/VBox/SubViewportContainer/SubViewport/JoypadDiagram/Buttons
@@ -19,17 +32,17 @@ var last_mapping: String = ""
 @onready var joy_mapping_axis_invert: CheckBox = $Mapping/Margin/VBox/Info/Extra/InvertAxis
 
 
-# Connected to Mapping.window_input, otherwise no gamepad events
-# will be received when the subwindow is focused.
+## _input 入口，接收手柄输入事件进行映射。
+## 连接到 Mapping.window_input，否则子窗口聚焦时无法接收手柄事件。
 func _input(input_event: InputEvent) -> void:
 	if cur_step == -1:
 		return
 
-	# Ignore events not related to gamepads.
+	# 忽略非手柄事件
 	if input_event is not InputEventJoypadButton and input_event is not InputEventJoypadMotion:
 		return
 
-	# Ignore devices other than the one being remapped. Handles accidental input and analog drift.
+	# 忽略非当前手柄的设备（防止误触和摇杆漂移）
 	if input_event.device != joy_index:
 		return
 
@@ -56,6 +69,7 @@ func _input(input_event: InputEvent) -> void:
 		cur_mapping[steps[cur_step]] = map
 
 
+## 从映射字典生成 SDL2 格式的映射字符串。
 func create_mapping_string(mapping: Dictionary) -> String:
 	var string: String = "%s,%s," % [joy_guid, joy_name]
 
@@ -72,6 +86,7 @@ func create_mapping_string(mapping: Dictionary) -> String:
 	return string + "platform:" + platform
 
 
+## 开始重映射流程。
 func start(idx: int) -> void:
 	joy_index = idx
 	joy_guid = Input.get_joy_guid(idx)
@@ -80,14 +95,15 @@ func start(idx: int) -> void:
 		push_error("Unable to find controller")
 		return
 	if OS.has_feature("web"):
-		# Propose trying known mapping on Web.
+		# Web 上建议尝试已知映射
 		$Start.window_title = "%s - %s" % [joy_guid, joy_name]
 		$Start.popup_centered()
 	else:
-		# Run wizard directly.
+		# 直接运行向导
 		_on_Wizard_pressed()
 
 
+## 完成映射并关闭向导。
 func remap_and_close(mapping: Dictionary) -> void:
 	last_mapping = create_mapping_string(mapping)
 	Input.add_joy_mapping(last_mapping, true)
@@ -95,6 +111,7 @@ func remap_and_close(mapping: Dictionary) -> void:
 	show_map()
 
 
+## 重置向导状态。
 func reset() -> void:
 	$Start.hide()
 	$Mapping.hide()
@@ -104,6 +121,7 @@ func reset() -> void:
 	cur_step = -1
 
 
+## 进入下一步映射。
 func step_next() -> void:
 	$Mapping.title = "Step: %d/%d" % [cur_step + 1, steps.size()]
 	joy_mapping_text.text = ""
@@ -113,6 +131,7 @@ func step_next() -> void:
 		_update_step()
 
 
+## 显示最终映射字符串。
 func show_map() -> void:
 	if OS.has_feature("web"):
 		JavaScriptBridge.eval("window.prompt('This is the resulting remap string', '%s')" % last_mapping)
@@ -121,6 +140,7 @@ func show_map() -> void:
 		$MapWindow.popup_centered()
 
 
+## 更新当前步骤的 UI 显示。
 func _update_step() -> void:
 	$Mapping/Margin/VBox/Info/Buttons/Next.grab_focus()
 	for btn in joy_buttons.get_children():
@@ -147,6 +167,7 @@ func _update_step() -> void:
 			joy_mapping_axis_invert.button_pressed = cur.inverted
 
 
+## 开始向导按钮回调。
 func _on_Wizard_pressed() -> void:
 	Input.remove_joy_mapping(joy_guid)
 	$Start.hide()
@@ -155,33 +176,40 @@ func _on_Wizard_pressed() -> void:
 	step_next()
 
 
+## 取消按钮回调。
 func _on_Cancel_pressed() -> void:
 	reset()
 
 
+## 使用 Xbox 预设映射。
 func _on_xbox_pressed() -> void:
 	remap_and_close(JoyMapping.XBOX)
 
 
+## 使用 macOS Xbox 预设映射。
 func _on_xboxosx_pressed() -> void:
 	remap_and_close(JoyMapping.XBOX_OSX)
 
 
+## 映射窗口关闭回调。
 func _on_Mapping_popup_hide() -> void:
 	reset()
 
 
+## 下一步按钮回调。
 func _on_Next_pressed() -> void:
 	cur_step += 1
 	step_next()
 
 
+## 上一步按钮回调。
 func _on_Prev_pressed() -> void:
 	if cur_step > 0:
 		cur_step -= 1
 		step_next()
 
 
+## 跳过当前按键映射。
 func _on_Skip_pressed() -> void:
 	var key: String = steps[cur_step]
 	if cur_mapping.has(key):
@@ -191,6 +219,7 @@ func _on_Skip_pressed() -> void:
 	step_next()
 
 
+## 全轴切换回调。
 func _on_FullAxis_toggled(button_pressed: bool) -> void:
 	if cur_step == -1 or not button_pressed:
 		return
@@ -201,6 +230,7 @@ func _on_FullAxis_toggled(button_pressed: bool) -> void:
 		joy_mapping_text.text = cur_mapping[key].to_human_string()
 
 
+## 轴反转切换回调。
 func _on_InvertAxis_toggled(button_pressed: bool) -> void:
 	if cur_step == -1:
 		return
@@ -211,13 +241,16 @@ func _on_InvertAxis_toggled(button_pressed: bool) -> void:
 		joy_mapping_text.text = cur_mapping[key].to_human_string()
 
 
+## 起始窗口关闭请求回调。
 func _on_start_close_requested() -> void:
 	$Start.hide()
 
 
+## 映射窗口关闭请求回调。
 func _on_mapping_close_requested() -> void:
 	$Mapping.hide()
 
 
+## 映射结果窗口关闭请求回调。
 func _on_map_window_close_requested() -> void:
 	$MapWindow.hide()

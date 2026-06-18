@@ -1,10 +1,18 @@
+## 选项菜单 —— 支持多级子菜单、复选框和单选按钮的菜单组件。
 class_name OptionMenu
 extends MenuButton
 
+## 选项选择信号（单选或普通项）。
 signal option_selected(item_path: String)
+## 选项变化信号（复选框）。
 signal option_changed(item_path: String, checked: bool)
 
 
+## 添加菜单项。
+## 参数 item_path: 以 "/" 分隔的路径，如 "SubMenu/Item"。
+## 参数 checkbox: 是否为复选框。
+## 参数 checked: 是否默认选中。
+## 参数 radio: 是否为单选按钮。
 func add_menu_item(item_path: String, checkbox: bool = false, checked: bool = false, radio: bool = false) -> void:
 	var path_elements := item_path.split("/", false)
 	var path_element_count := path_elements.size()
@@ -32,6 +40,7 @@ func _add_item(parent_popup: PopupMenu, label: String) -> void:
 	parent_popup.add_item(label)
 
 
+## 添加子菜单。
 func _add_popup(parent_popup: PopupMenu, path: String, label: String) -> PopupMenu:
 	if parent_popup.has_node(label):
 		var popup_node := parent_popup.get_node(label)
@@ -51,6 +60,7 @@ func _add_popup(parent_popup: PopupMenu, path: String, label: String) -> PopupMe
 	return popup_menu
 
 
+## 菜单项点击回调。
 func _on_item_pressed(item_index: int, popup_menu: PopupMenu, path: String) -> void:
 	var item_path := path + popup_menu.get_item_text(item_index)
 

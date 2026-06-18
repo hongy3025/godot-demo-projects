@@ -1,6 +1,20 @@
+## 遮挡剔除和网格 LOD 演示场景的主控制器。
+##
+## 继承自 [Node3D]，提供遮挡剔除、网格 LOD、绘制模式和 V-Sync 的快捷键切换，
+## 并实时显示渲染性能统计信息。
 extends Node3D
 
 
+## _input 入口。处理功能切换快捷键。
+##
+## 参数:
+##   input_event: 输入事件对象
+##
+## 快捷键功能：
+## - toggle_occlusion_culling: 切换遮挡剔除
+## - toggle_mesh_lod: 切换网格 LOD
+## - cycle_draw_mode: 循环切换绘制模式（正常/无光照/光照/过度绘制/线框）
+## - toggle_vsync: 切换垂直同步
 func _input(input_event: InputEvent) -> void:
 	if input_event.is_action_pressed(&"toggle_occlusion_culling"):
 		get_viewport().use_occlusion_culling = not get_viewport().use_occlusion_culling
@@ -18,13 +32,16 @@ func _input(input_event: InputEvent) -> void:
 			DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 
 
+## _process 入口。每帧更新渲染性能统计信息。
+##
+## 显示内容：FPS、帧时间、渲染对象数、图元索引数（千）、绘制调用数。
 func _process(_delta: float) -> void:
 	$Performance.text = """%d FPS (%.2f mspf)
 
-Currently rendering:
-%d objects
-%dK primitive indices
-%d draw calls
+当前渲染:
+%d 个对象
+%dK 图元索引
+%d 次绘制调用
 """ % [
 	Engine.get_frames_per_second(),
 	1000.0 / Engine.get_frames_per_second(),
@@ -34,23 +51,30 @@ Currently rendering:
 ]
 
 
+## 更新所有状态标签的显示文本。
 func update_labels() -> void:
-	$OcclusionCulling.text = "Occlusion culling: %s" % ("Enabled" if get_viewport().use_occlusion_culling else "Disabled")
-	$MeshLOD.text = "Mesh LOD: %s" % ("Enabled" if not is_zero_approx(get_viewport().mesh_lod_threshold) else "Disabled")
-	$DrawMode.text = "Draw mode: %s" % get_draw_mode_string(get_viewport().debug_draw)
+	$OcclusionCulling.text = "遮挡剔除: %s" % ("已启用" if get_viewport().use_occlusion_culling else "已禁用")
+	$MeshLOD.text = "网格 LOD: %s" % ("已启用" if not is_zero_approx(get_viewport().mesh_lod_threshold) else "已禁用")
+	$DrawMode.text = "绘制模式: %s" % get_draw_mode_string(get_viewport().debug_draw)
 
 
+## 获取绘制模式的显示字符串。
+##
+## 参数:
+##   draw_mode: Viewport.DebugDraw 枚举值
+##
+## 返回: [String] 绘制模式的中文描述
 func get_draw_mode_string(draw_mode: int) -> String:
 	match draw_mode:
 		0:
-			return "Normal"
+			return "正常"
 		1:
-			return "Unshaded"
+			return "无光照"
 		2:
-			return "Lighting"
+			return "光照"
 		3:
-			return "Overdraw"
+			return "过度绘制"
 		4:
-			return "Wireframe"
+			return "线框"
 		_:
-			return "(unknown)"
+			return "（未知）"

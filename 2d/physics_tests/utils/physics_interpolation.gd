@@ -1,3 +1,4 @@
+## 物理插值开关 —— 控制全局物理插值。
 extends CheckButton
 
 

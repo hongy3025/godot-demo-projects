@@ -1,62 +1,21 @@
+## 物理测试注册器 —— 注册所有可用的物理测试。
 extends Node
 
 var _tests: Array[Dictionary] = [
-	{
-		"id": "Functional Tests/Shapes",
-		"path": "res://tests/functional/test_shapes.tscn",
-	},
-	{
-		"id": "Functional Tests/Compound Shapes",
-		"path": "res://tests/functional/test_compound_shapes.tscn",
-	},
-	{
-		"id": "Functional Tests/Friction",
-		"path": "res://tests/functional/test_friction.tscn",
-	},
-	{
-		"id": "Functional Tests/Box Stack",
-		"path": "res://tests/functional/test_stack.tscn",
-	},
-	{
-		"id": "Functional Tests/Box Pyramid",
-		"path": "res://tests/functional/test_pyramid.tscn",
-	},
-	{
-		"id": "Functional Tests/Collision Pairs",
-		"path": "res://tests/functional/test_collision_pairs.tscn",
-	},
-	{
-		"id": "Functional Tests/Joints",
-		"path": "res://tests/functional/test_joints.tscn",
-	},
-	{
-		"id": "Functional Tests/Raycasting",
-		"path": "res://tests/functional/test_raycasting.tscn",
-	},
-	{
-		"id": "Functional Tests/RigidBody Impact",
-		"path": "res://tests/functional/test_rigidbody_impact.tscn",
-	},
-	{
-		"id": "Functional Tests/RigidBody Ground Check",
-		"path": "res://tests/functional/test_rigidbody_ground_check.tscn",
-	},
-	{
-		"id": "Functional Tests/Moving Platform",
-		"path": "res://tests/functional/test_moving_platform.tscn",
-	},
-	{
-		"id": "Performance Tests/Broadphase",
-		"path": "res://tests/performance/test_perf_broadphase.tscn",
-	},
-	{
-		"id": "Performance Tests/Contacts",
-		"path": "res://tests/performance/test_perf_contacts.tscn",
-	},
-	{
-		"id": "Performance Tests/Contact Islands",
-		"path": "res://tests/performance/test_perf_contact_islands.tscn",
-	},
+	{"id": "功能测试/形状", "path": "res://tests/functional/test_shapes.tscn"},
+	{"id": "功能测试/复合形状", "path": "res://tests/functional/test_compound_shapes.tscn"},
+	{"id": "功能测试/摩擦力", "path": "res://tests/functional/test_friction.tscn"},
+	{"id": "功能测试/盒子堆叠", "path": "res://tests/functional/test_stack.tscn"},
+	{"id": "功能测试/盒子金字塔", "path": "res://tests/functional/test_pyramid.tscn"},
+	{"id": "功能测试/碰撞对", "path": "res://tests/functional/test_collision_pairs.tscn"},
+	{"id": "功能测试/关节", "path": "res://tests/functional/test_joints.tscn"},
+	{"id": "功能测试/射线投射", "path": "res://tests/functional/test_raycasting.tscn"},
+	{"id": "功能测试/刚体碰撞", "path": "res://tests/functional/test_rigidbody_impact.tscn"},
+	{"id": "功能测试/刚体地面检测", "path": "res://tests/functional/test_rigidbody_ground_check.tscn"},
+	{"id": "功能测试/移动平台", "path": "res://tests/functional/test_moving_platform.tscn"},
+	{"id": "性能测试/宽阶段", "path": "res://tests/performance/test_perf_broadphase.tscn"},
+	{"id": "性能测试/接触点", "path": "res://tests/performance/test_perf_contacts.tscn"},
+	{"id": "性能测试/接触岛", "path": "res://tests/performance/test_perf_contact_islands.tscn"},
 ]
 
 

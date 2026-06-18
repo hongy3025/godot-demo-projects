@@ -1,3 +1,4 @@
+## 平台游戏主控制器 —— 管理全屏切换和暂停菜单。
 class_name Game
 extends Node
 
@@ -5,6 +6,7 @@ extends Node
 @onready var _pause_menu := $InterfaceLayer/PauseMenu as PauseMenu
 
 
+## 处理全屏切换和暂停输入。
 func _unhandled_input(input_event: InputEvent) -> void:
 	if input_event.is_action_pressed(&"toggle_fullscreen"):
 		var mode := DisplayServer.window_get_mode()

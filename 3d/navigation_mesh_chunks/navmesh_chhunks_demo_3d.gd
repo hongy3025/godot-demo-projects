@@ -1,16 +1,32 @@
+## 导航网格分块（Chunk）演示场景的主控制器。
+##
+## 继承自 [Node3D]，演示如何将大型导航网格拆分为多个小块（chunk），
+## 以支持动态加载/卸载和大型开放世界的导航。
+##
+## 核心功能：
+## 1. 从静态碰撞体解析源几何数据
+## 2. 将几何数据按网格分块烘焙为多个 NavigationRegion3D
+## 3. 实时显示鼠标位置的导航路径调试
 extends Node3D
 
 
+## 导航地图的网格单元大小。
 static var map_cell_size: float = 0.25
+## 每个分块的大小（以单元数计）。
 static var chunk_size: int = 16
+## 导航网格的体素单元大小。
 static var cell_size: float = 0.25
+## 导航代理半径。
 static var agent_radius: float = 0.5
+## 分块 ID 到 NavigationRegion3D 的映射字典。
 static var chunk_id_to_region: Dictionary = {}
 
 
+## 路径起点位置。
 var path_start_position: Vector3
 
 
+## _ready 入口。初始化导航调试、解析几何数据并创建分块区域。
 func _ready() -> void:
 	NavigationServer3D.set_debug_enabled(true)
 
@@ -19,12 +35,12 @@ func _ready() -> void:
 	var map: RID = get_world_3d().navigation_map
 	NavigationServer3D.map_set_cell_size(map, map_cell_size)
 
-	# Disable performance costly edge connection margin feature.
-	# This feature is not needed to merge navigation mesh edges.
-	# If edges are well aligned they will merge just fine by edge key.
+	# 禁用性能昂贵的边缘连接功能。
+	# 此功能对合并导航网格边缘不是必需的。
+	# 如果边缘对齐良好，通过边缘键即可正常合并。
 	NavigationServer3D.map_set_use_edge_connections(map, false)
 
-	# Parse the collision shapes below our parse root node.
+	# 解析解析根节点下的碰撞形状。
 	var source_geometry: NavigationMeshSourceGeometryData3D = NavigationMeshSourceGeometryData3D.new()
 	var parse_settings: NavigationMesh = NavigationMesh.new()
 	parse_settings.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
@@ -33,12 +49,26 @@ func _ready() -> void:
 	create_region_chunks(%ChunksContainer, source_geometry, chunk_size * cell_size, agent_radius)
 
 
+## 创建导航网格分块区域。
+##
+## 参数:
+##   chunks_root_node: 分块区域的父节点
+##   p_source_geometry: 源几何数据
+##   p_chunk_size: 每个分块的世界空间大小
+##   p_agent_radius: 导航代理半径
+##
+## 核心算法：
+## 1. 计算输入几何体的 AABB 包围盒
+## 2. 将包围盒光栅化为分块网格
+## 3. 对每个分块，扩展烘焙边界以包含相邻分块的几何体（确保边缘对齐）
+## 4. 烘焙每个分块的 NavigationMesh
+## 5. 对顶点进行快照（snapped）处理以避免浮点精度问题
+## 6. 创建 NavigationRegion3D 并添加到场景
 static func create_region_chunks(chunks_root_node: Node, p_source_geometry: NavigationMeshSourceGeometryData3D, p_chunk_size: float, p_agent_radius: float) -> void:
-	# We need to know how many chunks are required for the input geometry.
-	# So first get an axis aligned bounding box that covers all vertices.
+	# 获取输入几何体的轴对齐包围盒，确定需要多少分块。
 	var input_geometry_bounds: AABB = p_source_geometry.get_bounds()
 
-	# Rasterize bounding box into chunk grid to know range of required chunks.
+	# 将包围盒光栅化为分块网格，确定所需的分块范围。
 	var start_chunk: Vector3 = floor(
 			input_geometry_bounds.position / p_chunk_size
 		)
@@ -47,11 +77,9 @@ static func create_region_chunks(chunks_root_node: Node, p_source_geometry: Navi
 			/ p_chunk_size
 		)
 
-	# NavigationMesh.border_size is limited to the xz-axis.
-	# So we can only bake one chunk for the y-axis and also
-	# need to span the bake bounds over the entire y-axis.
-	# If we dont do this we would create duplicated polygons
-	# and stack them on top of each other causing merge errors.
+	# NavigationMesh.border_size 仅限于 xz 轴。
+	# 因此 y 轴只能烘焙一个分块，且烘焙边界需要跨越整个 y 轴范围。
+	# 否则会创建重复的多边形并堆叠在一起，导致合并错误。
 	var bounds_min_height: float = start_chunk.y
 	var bounds_max_height: float = end_chunk.y + p_chunk_size
 	var chunk_y: int = 0
@@ -64,10 +92,8 @@ static func create_region_chunks(chunks_root_node: Node, p_source_geometry: Navi
 					Vector3(chunk_x, bounds_min_height, chunk_z) * p_chunk_size,
 					Vector3(p_chunk_size, bounds_max_height, p_chunk_size),
 				)
-			# We grow the chunk bounding box to include geometry
-			# from all the neighbor chunks so edges can align.
-			# The border size is the same value as our grow amount so
-			# the final navigation mesh ends up with the intended chunk size.
+			# 扩展分块包围盒以包含相邻分块的几何体，确保边缘对齐。
+			# border_size 与扩展量相同，使最终导航网格达到预期的分块大小。
 			var baking_bounds: AABB = chunk_bounding_box.grow(p_chunk_size)
 
 			var chunk_navmesh: NavigationMesh = NavigationMesh.new()
@@ -79,10 +105,10 @@ static func create_region_chunks(chunks_root_node: Node, p_source_geometry: Navi
 			chunk_navmesh.agent_radius = p_agent_radius
 			NavigationServer3D.bake_from_source_geometry_data(chunk_navmesh, p_source_geometry)
 
-			# The only reason we reset the baking bounds here is to not render its debug.
+			# 重置烘焙边界以避免渲染其调试可视化。
 			chunk_navmesh.filter_baking_aabb = AABB()
 
-			# Snap vertex positions to avoid most rasterization issues with float precision.
+			# 对顶点位置进行快照处理，避免浮点精度导致的栅格化问题。
 			var navmesh_vertices: PackedVector3Array = chunk_navmesh.vertices
 			for i in navmesh_vertices.size():
 				var vertex: Vector3 = navmesh_vertices[i]
@@ -96,11 +122,21 @@ static func create_region_chunks(chunks_root_node: Node, p_source_geometry: Navi
 			chunk_id_to_region[chunk_id] = chunk_region
 
 
+## _process 入口。每帧更新鼠标位置的导航路径调试显示。
+##
+## 参数:
+##   delta: 帧时间间隔（未使用）
+##
+## 核心逻辑：
+## 1. 从摄像机向鼠标位置发射射线
+## 2. 获取导航网格上的最近点
+## 3. 左键点击设置路径起点
+## 4. 更新多个路径调试节点的目标位置
 func _process(_delta: float) -> void:
 	var mouse_cursor_position: Vector2 = get_viewport().get_mouse_position()
 
 	var map: RID = get_world_3d().navigation_map
-	# Do not query when the map has never synchronized and is empty.
+	# 地图未同步时（为空）不查询。
 	if NavigationServer3D.map_get_iteration_id(map) == 0:
 		return
 

@@ -1,3 +1,4 @@
+## 刚体拾取 —— 支持鼠标拖拽移动刚体。
 extends RigidBody3D
 
 

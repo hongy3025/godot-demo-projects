@@ -1,3 +1,4 @@
+## FPS 显示标签。
 extends Label
 
 

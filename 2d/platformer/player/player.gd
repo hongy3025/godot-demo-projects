@@ -1,3 +1,4 @@
+## 平台游戏玩家 —— 支持行走、跳跃、二段跳和射击的 CharacterBody2D。
 class_name Player
 extends CharacterBody2D
 
@@ -7,11 +8,10 @@ signal coin_collected()
 const WALK_SPEED = 300.0
 const ACCELERATION_SPEED = WALK_SPEED * 6.0
 const JUMP_VELOCITY = -725.0
-## Maximum speed at which the player can fall.
+## 最大下落速度。
 const TERMINAL_VELOCITY = 700
 
-## The player listens for input actions appended with this suffix.[br]
-## Used to separate controls for multiple players in splitscreen.
+## 玩家监听带有此后缀的输入动作，用于分屏模式下区分多个玩家。
 @export var action_suffix: String = ""
 
 var gravity: int = ProjectSettings.get(&"physics/2d/default_gravity")
@@ -22,6 +22,7 @@ var gravity: int = ProjectSettings.get(&"physics/2d/default_gravity")
 @onready var jump_sound := $Jump as AudioStreamPlayer2D
 @onready var gun: Gun = sprite.get_node(^"Gun")
 @onready var camera := $Camera as Camera2D
+## 二段跳是否可用。
 var _double_jump_charged: bool = false
 
 
@@ -31,9 +32,9 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("jump" + action_suffix):
 		try_jump()
 	elif Input.is_action_just_released("jump" + action_suffix) and velocity.y < 0.0:
-		# The player let go of jump early, reduce vertical momentum.
+		# 玩家提前松开跳跃键，减少垂直动量（短跳效果）
 		velocity.y *= 0.6
-	# Fall.
+	# 下落
 	velocity.y = minf(TERMINAL_VELOCITY, velocity.y + gravity * delta)
 
 	var direction := Input.get_axis("move_left" + action_suffix, "move_right" + action_suffix) * WALK_SPEED
@@ -45,6 +46,7 @@ func _physics_process(delta: float) -> void:
 		else:
 			sprite.scale.x = -1.0
 
+	# 在斜坡上时禁用地板停止
 	floor_stop_on_slope = not platform_detector.is_colliding()
 	move_and_slide()
 
@@ -59,6 +61,7 @@ func _physics_process(delta: float) -> void:
 		animation_player.play(animation)
 
 
+## 根据当前状态获取动画名称。
 func get_new_animation(is_shooting: bool = false) -> String:
 	var animation_new: String
 	if is_on_floor():
@@ -76,6 +79,7 @@ func get_new_animation(is_shooting: bool = false) -> String:
 	return animation_new
 
 
+## 尝试跳跃：地面跳跃或二段跳。
 func try_jump() -> void:
 	if is_on_floor():
 		jump_sound.pitch_scale = 1.0

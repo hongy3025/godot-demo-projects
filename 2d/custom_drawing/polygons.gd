@@ -1,22 +1,17 @@
-# This is a `@tool` script so that the custom 2D drawing can be seen in the editor.
+## 多边形与折线绘制演示 —— 使用 _draw() 方法绘制各种多边形和线条。
+## @tool 脚本使自定义 2D 绘制在编辑器中可见。
 @tool
 extends Panel
 
+## 是否启用抗锯齿。
 var use_antialiasing: bool = false
 
 
 func _draw() -> void:
 	var margin := Vector2(240, 40)
 
-	# Line width of `-1.0` is only usable with draw antialiasing disabled,
-	# as it uses hardware line drawing as opposed to polygon-based line drawing.
-	# Automatically use polygon-based line drawing when needed to avoid runtime warnings.
-	# We also use a line width of `0.5` instead of `1.0` to better match the appearance
-	# of non-antialiased line drawing, as draw antialiasing tends to make lines look thicker.
 	var line_width_thin := 0.5 if use_antialiasing else -1.0
 
-	# Make thick lines 1 pixel thinner when draw antialiasing is enabled,
-	# as draw antialiasing tends to make lines look thicker.
 	var antialiasing_width_offset := 1.0 if use_antialiasing else 0.0
 
 	var points := PackedVector2Array([
@@ -37,10 +32,6 @@ func _draw() -> void:
 		])
 
 	var offset := Vector2()
-	# `draw_set_transform()` is a stateful command: it affects *all* `draw_` methods within this
-	# `_draw()` function after it. This can be used to translate, rotate, or scale `draw_` methods
-	# that don't offer dedicated parameters for this (such as `draw_primitive()` not having a position parameter).
-	# To reset back to the initial transform, call `draw_set_transform(Vector2())`.
 	draw_set_transform(margin + offset)
 	draw_primitive(points.slice(0, 1), colors.slice(0, 1), PackedVector2Array())
 
@@ -56,19 +47,17 @@ func _draw() -> void:
 	draw_set_transform(margin + offset)
 	draw_primitive(points.slice(0, 4), colors.slice(0, 4), PackedVector2Array())
 
-	# Draw a polygon with multiple colors that are interpolated between each point.
-	# Colors are specified in the same order as the points' positions, but in a different array.
+	# 绘制多色多边形，颜色在点之间插值
 	offset = Vector2(0, 120)
 	draw_set_transform(margin + offset)
 	draw_polygon(points, colors)
 
-	# Draw a polygon with a single color. Only a points array is needed in this case.
+	# 绘制单色多边形
 	offset += Vector2(90, 0)
 	draw_set_transform(margin + offset)
 	draw_colored_polygon(points, Color.YELLOW)
 
-	# Draw a polygon-based line. Each segment is connected to the previous one, which means
-	# `draw_polyline()` always draws a contiguous line.
+	# 绘制基于多边形的线条，每段相连，draw_polyline() 始终绘制连续线条
 	offset = Vector2(0, 240)
 	draw_set_transform(margin + offset)
 	draw_polyline(points, Color.SKY_BLUE, line_width_thin, use_antialiasing)
@@ -93,10 +82,8 @@ func _draw() -> void:
 	draw_set_transform(margin + offset)
 	draw_polyline_colors(points, colors, 6.0 - antialiasing_width_offset, use_antialiasing)
 
-	# Draw multiple lines in a single draw command. Unlike `draw_polyline()`,
-	# lines are not connected to the last segment.
-	# This is faster than calling `draw_line()` several times and should be preferred
-	# when drawing dozens of lines or more at once.
+	# 在单个绘制命令中绘制多条线。与 draw_polyline() 不同，线条之间不连续。
+	# 比多次调用 draw_line() 更快，适合同时绘制数十条以上线条。
 	offset = Vector2(0, 360)
 	draw_set_transform(margin + offset)
 	draw_multiline(points, Color.SKY_BLUE, line_width_thin, use_antialiasing)
@@ -109,10 +96,7 @@ func _draw() -> void:
 	draw_set_transform(margin + offset)
 	draw_multiline(points, Color.SKY_BLUE, 6.0 - antialiasing_width_offset, use_antialiasing)
 
-	# `draw_multiline_colors()` makes it possible to draw lines of different colors in a single
-	# draw command, although gradients are not possible this way (unlike `draw_polygon()` and `draw_polyline()`).
-	# This means the number of supplied colors must be equal to the number of segments, which means
-	# we have to only pass a subset of the colors array in this example.
+	# draw_multiline_colors() 可在单个绘制命令中绘制不同颜色的线条
 	offset += Vector2(90, 0)
 	draw_set_transform(margin + offset)
 	draw_multiline_colors(points, colors.slice(0, 3), line_width_thin, use_antialiasing)

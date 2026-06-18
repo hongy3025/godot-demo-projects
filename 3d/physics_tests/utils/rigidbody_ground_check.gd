@@ -1,7 +1,8 @@
+## 刚体地面检测 —— 使用 PhysicsShapeQueryParameters3D 检测地面接触。
 extends RigidBody3D
 
 
-var _dir: float = 1.0 # -1.0 or 1.0
+var _dir: float = 1.0
 var _distance: float = 10.0
 var _walk_spd: float = 100.0
 var _acceleration: float = 22.0

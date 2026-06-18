@@ -1,8 +1,12 @@
+## 游戏主控制器 —— 管理游戏状态、怪物生成、分数和音效。
 extends Node
 
+## 怪物场景的 PackedScene。
 @export var mob_scene: PackedScene
+## 当前分数。
 var score
 
+## 游戏结束：停止所有计时器，显示结束界面。
 func game_over():
 	$ScoreTimer.stop()
 	$MobTimer.stop()
@@ -11,6 +15,7 @@ func game_over():
 	$DeathSound.play()
 
 
+## 开始新游戏：清除所有怪物，重置分数和玩家位置。
 func new_game():
 	get_tree().call_group(&"mobs", &"queue_free")
 	score = 0
@@ -21,37 +26,35 @@ func new_game():
 	$Music.play()
 
 
+## 怪物生成计时器超时：在随机位置创建新怪物。
 func _on_MobTimer_timeout():
-	# Create a new instance of the Mob scene.
 	var mob = mob_scene.instantiate()
 
-	# Choose a random location on Path2D.
+	# 在 Path2D 上选择随机位置
 	var mob_spawn_location = get_node(^"MobPath/MobSpawnLocation")
 	mob_spawn_location.progress_ratio = randf()
 
-	# Set the mob's position to a random location.
 	mob.position = mob_spawn_location.position
 
-	# Set the mob's direction perpendicular to the path direction.
+	# 设置怪物方向垂直于路径方向，并添加随机偏移
 	var direction = mob_spawn_location.rotation + PI / 2
-
-	# Add some randomness to the direction.
 	direction += randf_range(-PI / 4, PI / 4)
 	mob.rotation = direction
 
-	# Choose the velocity for the mob.
+	# 设置随机速度
 	var velocity = Vector2(randf_range(150.0, 250.0), 0.0)
 	mob.linear_velocity = velocity.rotated(direction)
 
-	# Spawn the mob by adding it to the Main scene.
 	add_child(mob)
 
 
+## 分数计时器超时：增加分数并更新 UI。
 func _on_ScoreTimer_timeout():
 	score += 1
 	$HUD.update_score(score)
 
 
+## 开始计时器超时：启动怪物生成和分数计时器。
 func _on_StartTimer_timeout():
 	$MobTimer.start()
 	$ScoreTimer.start()

@@ -1,8 +1,20 @@
+## 体素世界环境控制器 —— 根据渲染距离动态调整雾效。
+##
+## 继承自 [WorldEnvironment]，根据 VoxelWorld 的有效渲染距离平滑调整雾效密度和距离。
 extends WorldEnvironment
-# This script controls fog based on the VoxelWorld's effective render distance.
 
+## VoxelWorld 节点引用。
 @onready var voxel_world: Node = $"../VoxelWorld"
 
+## _process 入口。每帧更新雾效参数。
+##
+## 参数:
+##   delta: 帧时间间隔
+##
+## 核心逻辑：
+## 1. 根据设置启用/禁用雾效
+## 2. 根据有效渲染距离计算目标雾效距离
+## 3. 平滑过渡到目标值
 func _process(delta: float) -> void:
 	environment.fog_enabled = Settings.fog_enabled
 

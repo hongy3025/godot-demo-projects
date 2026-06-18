@@ -1,7 +1,11 @@
+## 玩家状态机 —— 管理玩家所有状态的切换和堆叠。
+## 继承自通用状态机，扩展了状态栈管理（支持中断状态压栈）。
 extends "res://state_machine/state_machine.gd"
 
+## 预加载玩家状态常量字典。
 var PLAYER_STATE = preload("res://player/player_state.gd").PLAYER_STATE
 
+## 各状态节点的引用。
 @onready var idle: Node = $Idle
 @onready var move: Node = $Move
 @onready var jump: Node = $Jump
@@ -18,21 +22,24 @@ func _ready() -> void:
 	}
 
 
+## 重写状态切换逻辑：支持中断状态（踉跄、跳跃、攻击）压入状态栈，
+## 以便结束后能回到之前的状态。
 func _change_state(state_name: String) -> void:
-	# The base state_machine interface this node extends does most of the work.
 	if not _active:
 		return
+	# 中断状态压入栈顶，结束后可回到上一个状态
 	if state_name in [PLAYER_STATE.stagger, PLAYER_STATE.jump, PLAYER_STATE.attack]:
 		states_stack.push_front(states_map[state_name])
+	# 从移动状态跳跃时传递当前速度参数
 	if state_name == PLAYER_STATE.jump and current_state == move:
 		jump.initialize(move.speed, move.velocity)
 
 	super._change_state(state_name)
 
 
+## 处理可中断状态的输入：攻击输入可中断大多数状态。
 func _unhandled_input(input_event: InputEvent) -> void:
-	# Here we only handle input that can interrupt states, attacking in this case,
-	# otherwise we let the state node handle it.
+	# 攻击输入可中断当前状态（但不能在攻击或踉跄中再次攻击）
 	if input_event.is_action_pressed(PLAYER_STATE.attack):
 		if current_state in [attack, stagger]:
 			return

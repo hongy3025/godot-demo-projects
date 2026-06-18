@@ -1,3 +1,4 @@
+## 多边形与线条演示控制器 —— 管理 MSAA 设置。
 extends Node2D
 
 

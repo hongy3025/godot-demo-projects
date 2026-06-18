@@ -1,59 +1,80 @@
 @tool
+## IK LookAt 节点 —— 使骨骼的指定骨头始终朝向目标位置。
+##
+## 继承自 [Node3D]，通过设置骨骼全局姿态覆盖实现单骨头的 IK LookAt 效果。
+## 支持多种更新模式（_process/_physics_process/_notification）、
+## 自定义朝向轴、插值平滑、附加旋转和附加骨骼定位。
 extends Node3D
 
+## 目标 Skeleton3D 的节点路径。
 @export var skeleton_path: NodePath:
 	set(value):
-		# Assign skeleton_path to whatever value is passed.
 		skeleton_path = value
-		# Because get_node doesn't work in the first call, we just want to assign instead.
-		# This is to get around an issue with NodePaths exposed to the editor.
+		# 首次调用时 get_node 不可用，仅赋值。
 		if first_call:
 			return
 		_setup_skeleton_path()
+## 要控制的骨骼名称。
 @export var bone_name: String = ""
+## 更新模式：0=_process, 1=_physics_process, 2=_notification, 3=none。
 @export_enum("_process", "_physics_process", "_notification", "none") var update_mode: int = 0:
 	set(value):
 		update_mode = value
 
-		# Set all of our processes to false.
+		# 禁用所有处理模式。
 		set_process(false)
 		set_physics_process(false)
 		set_notify_transform(false)
 
-		# Based on the value of passed to update, enable the correct process.
+		# 根据传入值启用对应的处理模式。
 		if update_mode == 0:
 			set_process(true)
 			if debug_messages:
-				print(name, " - IK_LookAt: updating skeleton using _process...")
+				print(name, " - IK_LookAt: 使用 _process 更新骨骼...")
 		elif update_mode == 1:
 			set_physics_process(true)
 			if debug_messages:
-				print(name, " - IK_LookAt: updating skeleton using _physics_process...")
+				print(name, " - IK_LookAt: 使用 _physics_process 更新骨骼...")
 		elif update_mode == 2:
 			set_notify_transform(true)
 			if debug_messages:
-				print(name, " - IK_LookAt: updating skeleton using _notification...")
+				print(name, " - IK_LookAt: 使用 _notification 更新骨骼...")
 		else:
 			if debug_messages:
-				print(name, " - IK_LookAt: NOT updating skeleton due to unknown update method...")
+				print(name, " - IK_LookAt: 未知更新方法，不更新骨骼...")
 
+## 朝向轴：0=X-up, 1=Y-up, 2=Z-up。
 @export_enum("X-up", "Y-up", "Z-up") var look_at_axis: int = 1
+## 插值系数（0.0~1.0），1.0 为直接设置。
 @export_range(0.0, 1.0, 0.001) var interpolation: float = 1.0
+## 是否使用本节点的 X 轴旋转。
 @export var use_our_rotation_x: bool = false
+## 是否使用本节点的 Y 轴旋转。
 @export var use_our_rotation_y: bool = false
+## 是否使用本节点的 Z 轴旋转。
 @export var use_our_rotation_z: bool = false
+## 是否使用负的本节点旋转。
 @export var use_negative_our_rot: bool = false
+## 附加旋转（欧拉角，度）。
 @export var additional_rotation: Vector3 = Vector3()
+## 是否使用附加骨骼定位位置。
 @export var position_using_additional_bone: bool = false
+## 附加骨骼名称。
 @export var additional_bone_name: String = ""
+## 附加骨骼长度。
 @export var additional_bone_length: float = 1
+## 是否输出调试信息。
 @export var debug_messages: bool = false
 
+## 目标 Skeleton3D 节点引用。
 var skeleton_to_use: Skeleton3D = null
+## 首次调用标记，用于绕过 NodePath 在 _ready 中不可用的问题。
 var first_call: bool = true
+## 编辑器中的可视化指示器。
 var _editor_indicator: Node3D = null
 
 
+## _ready 入口。根据 update_mode 启用对应的处理模式。
 func _ready():
 	set_process(false)
 	set_physics_process(false)
@@ -67,7 +88,7 @@ func _ready():
 		set_notify_transform(true)
 	else:
 		if debug_messages:
-			print(name, " - IK_LookAt: Unknown update mode. NOT updating skeleton")
+			print(name, " - IK_LookAt: 未知更新模式。不更新骨骼")
 
 	if Engine.is_editor_hint():
 		_setup_for_editor()
@@ -86,36 +107,44 @@ func _notification(what):
 		update_skeleton()
 
 
+## 更新骨骼姿态。核心 IK LookAt 逻辑。
+##
+## 核心算法：
+## 1. 获取骨骼的全局姿态
+## 2. 将目标位置转换到骨骼空间
+## 3. 使用 looking_at 使骨骼朝向目标
+## 4. 应用本节点旋转、附加旋转
+## 5. 如果启用，使用附加骨骼定位位置
+## 6. 通过 set_bone_global_pose_override 应用
 func update_skeleton():
-	# NOTE: Because get_node doesn't work in _ready, we need to skip
-	# a call before doing anything.
+	# 首次调用时跳过，因为 get_node 在 _ready 中不可用。
 	if first_call:
 		first_call = false
 		if skeleton_to_use == null:
 			_setup_skeleton_path()
 
-	# If we do not have a skeleton and/or we're not supposed to update, then return.
+	# 如果没有骨骼或不更新，则返回。
 	if skeleton_to_use == null:
 		return
 	if update_mode >= 3:
 		return
 
-	# Get the bone index.
+	# 获取骨骼索引。
 	var bone: int = skeleton_to_use.find_bone(bone_name)
 
-	# If no bone is found (-1), then return and optionally printan error.
+	# 如果未找到骨骼，返回并可选打印错误。
 	if bone == -1:
 		if debug_messages:
-			print(name, " - IK_LookAt: No bone in skeleton found with name [", bone_name, "]!")
+			print(name, " - IK_LookAt: 在骨骼中未找到名为 [", bone_name, "] 的骨骼！")
 		return
 
-	# get the bone's global transform pose.
+	# 获取骨骼的全局姿态。
 	var rest = skeleton_to_use.get_bone_global_pose(bone)
 
-	# Convert our position relative to the skeleton's transform.
+	# 将本节点位置转换到骨骼空间。
 	var target_pos = global_transform.origin * skeleton_to_use.global_transform
 
-	# Call helper's look_at function with the chosen up axis.
+	# 使用选择的朝上轴调用 looking_at。
 	if look_at_axis == 0:
 		rest = rest.looking_at(target_pos, Vector3.RIGHT)
 	elif look_at_axis == 1:
@@ -125,17 +154,17 @@ func update_skeleton():
 	else:
 		rest = rest.looking_at(target_pos, Vector3.UP)
 		if debug_messages:
-			print(name, " - IK_LookAt: Unknown look_at_axis value!")
+			print(name, " - IK_LookAt: 未知的 look_at_axis 值！")
 
-	# Get the rotation euler of the bone and of this node.
+	# 获取骨骼和本节点的旋转欧拉角。
 	var rest_euler = rest.basis.get_euler()
 	var self_euler = global_transform.basis.orthonormalized().get_euler()
 
-	# Flip the rotation euler if using negative rotation.
+	# 如果使用负旋转，翻转欧拉角。
 	if use_negative_our_rot:
 		self_euler = -self_euler
 
-	# Apply this node's rotation euler on each axis, if wanted/required.
+	# 按需应用本节点的旋转。
 	if use_our_rotation_x:
 		rest_euler.x = self_euler.x
 	if use_our_rotation_y:
@@ -143,17 +172,16 @@ func update_skeleton():
 	if use_our_rotation_z:
 		rest_euler.z = self_euler.z
 
-	# Make a new basis with the, potentially, changed euler angles.
+	# 用修改后的欧拉角创建新基。
 	rest.basis = Basis.from_euler(rest_euler)
 
-	# Apply additional rotation stored in additional_rotation to the bone.
+	# 应用附加旋转。
 	if additional_rotation != Vector3.ZERO:
 		rest.basis = rest.basis.rotated(rest.basis.x, deg_to_rad(additional_rotation.x))
 		rest.basis = rest.basis.rotated(rest.basis.y, deg_to_rad(additional_rotation.y))
 		rest.basis = rest.basis.rotated(rest.basis.z, deg_to_rad(additional_rotation.z))
 
-	# If the position is set using an additional bone, then set the origin
-	# based on that bone and its length.
+	# 如果使用附加骨骼定位，基于该骨骼及其长度设置位置。
 	if position_using_additional_bone:
 		var additional_bone_id = skeleton_to_use.find_bone(additional_bone_name)
 		var additional_bone_pos = skeleton_to_use.get_bone_global_pose(additional_bone_id)
@@ -162,53 +190,48 @@ func update_skeleton():
 				- additional_bone_pos.basis.z.normalized() * additional_bone_length
 			)
 
-	# Finally, apply the new rotation to the bone in the skeleton.
+	# 应用新的旋转到骨骼。
 	skeleton_to_use.set_bone_global_pose_override(bone, rest, interpolation, true)
 
 
+## 在编辑器中创建可视化指示器。
 func _setup_for_editor():
-	# To see the target in the editor, let's create a MeshInstance3D,
-	# add it as a child of this node, and name it.
 	_editor_indicator = MeshInstance3D.new()
 	add_child(_editor_indicator)
-	_editor_indicator.name = &"(EditorOnly) Visual indicator"
+	_editor_indicator.name = &"(EditorOnly) 可视化指示器"
 
-	# Make a sphere mesh for the MeshInstance3D
 	var indicator_mesh = SphereMesh.new()
 	indicator_mesh.radius = 0.1
 	indicator_mesh.height = 0.2
 	indicator_mesh.radial_segments = 8
 	indicator_mesh.rings = 4
 
-	# Create a new StandardMaterial3D for the sphere and give it the editor
-	# gizmo texture so it is textured.
 	var indicator_material = StandardMaterial3D.new()
 	indicator_material.flags_unshaded = true
 	indicator_material.albedo_texture = preload("editor_gizmo_texture.png")
 	indicator_material.albedo_color = Color(1, 0.5, 0, 1)
 
-	# Assign the material and mesh to the MeshInstance3D.
 	indicator_mesh.material = indicator_material
 	_editor_indicator.mesh = indicator_mesh
 
 
+## 设置骨骼路径并获取 Skeleton3D 引用。
 func _setup_skeleton_path():
 	if skeleton_path == null:
 		if debug_messages:
-			print(name, " - IK_LookAt: No Nodepath selected for skeleton_path!")
+			print(name, " - IK_LookAt: 未选择 skeleton_path 的节点路径！")
 		return
 
-	# Get the node at that location, if there is one.
 	var temp = get_node(skeleton_path)
 	if temp != null:
 		if temp is Skeleton3D:
 			skeleton_to_use = temp
 			if debug_messages:
-				print(name, " - IK_LookAt: attached to (new) skeleton")
+				print(name, " - IK_LookAt: 已连接到（新）骨骼")
 		else:
 			skeleton_to_use = null
 			if debug_messages:
-				print(name, " - IK_LookAt: skeleton_path does not point to a skeleton!")
+				print(name, " - IK_LookAt: skeleton_path 未指向骨骼节点！")
 	else:
 		if debug_messages:
-			print(name, " - IK_LookAt: No Nodepath selected for skeleton_path!")
+			print(name, " - IK_LookAt: 未选择 skeleton_path 的节点路径！")

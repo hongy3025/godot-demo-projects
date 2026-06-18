@@ -1,14 +1,25 @@
-## Input Routing for different SubViewports.
-## Based on the provided input configuration, ensures only the correct
-## events reaching the SubViewport.
-## 本脚本用于为不同的 SubViewport 进行输入路由。
-## 根据提供的输入配置，确保只有正确的事件能够到达 SubViewport。
-## 定义类名 InputRoutingViewportContainer，使其可以在编辑器和其他脚本中通过该名称引用。
+## 输入路由 SubViewportContainer —— 根据配置的输入方案，仅将正确的输入事件传递给子视口。
+##
+## 继承自 [SubViewportContainer]，通过 class_name 注册为可全局使用的类型。
+## 支持键盘和手柄输入过滤：键盘按按键码集合过滤，手柄按设备 ID 过滤。
 class_name InputRoutingViewportContainer
 ## 继承自 SubViewportContainer，该节点用于容纳 SubViewport 并负责将其内容渲染到屏幕上，
 ## 同时可以拦截或转发输入事件。
 extends SubViewportContainer
 
+## 当前使用的键盘按键码集合。只有集合中的按键事件才会被传递。
+var _current_keyboard_set: Array = []
+## 当前使用的手柄设备 ID。为 -1 表示不使用手柄。
+var _current_joypad_device: int = -1
+
+
+## 判断输入事件是否应被传递到子视口。
+## 参数:
+##   input_event: 输入事件对象
+## 返回: [bool] true 表示允许事件通过，false 表示拦截
+##
+## 键盘事件：检查按键码是否在当前键盘集合中
+## 手柄按钮事件：检查设备 ID 是否匹配且已配置手柄
 
 ## 当前允许的键盘按键集合，类型为 Array，初始为空数组。
 ## 只有该数组中包含的按键码对应的键盘事件，才会被转发到子视口。
@@ -39,6 +50,9 @@ func _propagate_input_event(input_event: InputEvent) -> bool:
 	return false
 
 
+## 设置新的输入配置。
+## 参数:
+##   config_dict: 配置字典，包含 "keyboard"（按键码数组）和 "joypad"（手柄设备 ID）
 ## 为输入处理设置新的配置。
 ## 接收一个字典参数 config_dict，该字典通常由 SplitScreen 在切换 OptionButton 选项时生成并传入。
 func set_input_config(config_dict: Dictionary):

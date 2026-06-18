@@ -1,10 +1,18 @@
+## 曲谱数据 —— 存储和管理节奏游戏的曲谱信息。
+##
+## 通过 [code]class_name ChartData[/code] 注册为全局类型。
+## 包含两首内置曲谱（THE_COMEBACK 和 SYNC_TEST），
+## 每首曲谱以 16 分音符为最小单位，数组元素 0/1 表示该位置是否有音符。
 class_name ChartData
 
+## 曲谱枚举。
 enum Chart {
-	THE_COMEBACK = 0,
-	SYNC_TEST = 1,
+	THE_COMEBACK = 0,  ## 正式曲谱
+	SYNC_TEST = 1,     ## 同步测试曲谱（全 16 分音符）
 }
 
+## "The Comeback" 曲谱数据。每行 16 个元素对应一小节（4 拍 × 4 个 16 分音符）。
+## 1 表示该位置有音符，0 表示无音符。
 const THE_COMEBACK_DATA: Array[Array] = [
 	[1,0,0,0, 0,0,0,0, 1,0,0,1, 0,0,1,0],
 	[0,0,0,0, 0,0,0,0, 1,0,0,1, 0,0,1,0],
@@ -64,6 +72,7 @@ const THE_COMEBACK_DATA: Array[Array] = [
 	[1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
 ]
 
+## 同步测试曲谱数据。每行 4 个元素（全 16 分音符，用于测试同步精度）。
 const SYNC_TEST_DATA: Array[Array] = [
 	[1,1,1,1],
 	[1,1,1,1],
@@ -124,6 +133,9 @@ const SYNC_TEST_DATA: Array[Array] = [
 ]
 
 
+## 根据曲谱枚举获取对应的曲谱数据。
+## chart: 曲谱枚举值
+## 返回: 曲谱数据二维数组
 static func get_chart_data(chart: Chart) -> Array[Array]:
 	match chart:
 		ChartData.Chart.THE_COMEBACK:

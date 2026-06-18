@@ -1,10 +1,34 @@
-## Interface for a SplitScreen
-## SplitScreen（分屏）的接口与逻辑控制脚本。
-## 定义类名 SplitScreen，方便在 root.gd 等脚本中通过类型判断识别分屏节点。
+## 分屏界面控制器 —— 管理单个分屏的输入配置和玩家设置。
+##
+## 继承自 [Node]，通过 class_name 注册为可全局使用的类型。
+## 每个 SplitScreen 实例对应一个分屏区域，包含 OptionButton 用于选择输入方式（键盘方案或手柄）。
+## 通过 InputRoutingViewportContainer 实现输入路由过滤。
 class_name SplitScreen
 ## 继承自 Node，作为该分屏子树的根节点，负责统筹子节点的配置与交互。
 extends Node
 
+## 手柄选项在 OptionButton 中的显示前缀。
+const JOYPAD_PREFIX: String = "Joypad"
+
+## 玩家初始位置。
+@export var init_position := Vector2.ZERO
+
+## 所有键盘选项的副本字典，键为选项名称，值为包含按键码数组的字典。
+var _keyboard_options: Dictionary
+
+## 输入方式选择的下拉菜单。
+@onready var opt: OptionButton = $OptionButton
+## 渲染玩家画面的子视口。
+@onready var viewport: SubViewport = $InputRoutingViewportContainer/SubViewport
+## 输入路由容器，负责过滤输入事件。
+@onready var input_router: InputRoutingViewportContainer = $InputRoutingViewportContainer
+## 分屏中的玩家节点。
+@onready var play: Player = $InputRoutingViewportContainer/SubViewport/Player
+
+
+## 配置此分屏并初始化 OptionButton。
+## 参数:
+##   config_dict: 配置字典，包含 keyboard（键盘选项）、position（位置）、index（索引）、color（颜色）、joypads（手柄数量）、world（共享的 World2D）
 
 ## 手柄前缀字符串，值为 "Joypad"。
 ## 用于在 OptionButton 的文本中标识手柄选项，例如 "Joypad 1"、"Joypad 2" 等。
@@ -46,10 +70,12 @@ func set_config(config_dict: Dictionary):
 	play.modulate = config_dict["color"]
 	# 清空 OptionButton 中的所有现有选项，准备重新填充。
 	opt.clear()
+	# 添加所有键盘选项到下拉菜单
 	# 遍历所有可用的键盘配置名称（如 "wasd"、"ijkl"、"arrows"、"numpad"）。
 	for keyboard_opt in _keyboard_options:
 		# 将每个键盘配置名称作为文本项添加到 OptionButton 下拉列表中。
 		opt.add_item(keyboard_opt)
+	# 添加所有手柄选项到下拉菜单
 	# 遍历可用手柄的数量（joypads 为手柄数量，例如 4）。
 	# index 的取值范围为 0 到 joypads-1。
 	for index in config_dict["joypads"]:
@@ -61,6 +87,16 @@ func set_config(config_dict: Dictionary):
 	opt.select(local_index)
 	# 手动调用选项选中回调函数，确保 input_router 立即应用与当前选中项对应的输入配置。
 	_on_option_button_item_selected(local_index)
+	# 将所有分屏连接到同一个 World2D，实现共享物理/绘制空间
+	viewport.world_2d = config_dict["world"]
+
+
+## 响应 OptionButton 选择：更新输入路由配置。
+## 参数:
+##   index: 选中项的索引
+##
+## 如果选中手柄选项，配置手柄设备 ID 并清空键盘集合；
+## 如果选中键盘选项，配置对应的按键码集合并将手柄设为 -1。
 	# 将该 SubViewport 的 world_2d 属性指向配置字典中的共享 World2D 对象。
 	# 这是实现"多窗口同世界"的关键：所有分屏看到同一个物理世界和实体状态。
 	viewport.world_2d = config_dict["world"]
@@ -74,6 +110,7 @@ func _on_option_button_item_selected(index: int) -> void:
 	# 判断该文本是否以 JOYPAD_PREFIX（即 "Joypad"）开头。
 	# 如果是，说明玩家选择使用手柄作为输入设备。
 	if text.begins_with(JOYPAD_PREFIX):
+		# 从文本中提取手柄编号（如 "Joypad 1" -> 1）
 		# 构造配置字典传给 input_router：
 		# - 使用 text.substr(text.length() - 1, -1) 截取字符串末尾的数字字符（如 "2"）。
 		#   注意：这里 substr 的第二个参数 -1 表示截取到末尾，从而得到最后一个字符。

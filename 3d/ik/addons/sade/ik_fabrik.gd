@@ -1,59 +1,66 @@
 @tool
+## IK FABRIK 节点 —— 使用 FABRIK 算法求解多骨骼 IK 链。
+##
+## 继承自 [Node3D]，实现 FABRIK（Forward And Backward Reaching Inverse Kinematics）算法。
+## 支持多骨骼链、中间关节目标、迭代次数限制、多种更新模式。
+##
+## FABRIK 算法核心：
+## 1. 反向传递（Backward）：从末端执行器向根节点调整位置
+## 2. 正向传递（Forward）：从根节点向末端执行器调整位置
+## 3. 应用旋转：根据位置调整骨骼旋转
 extends Node3D
 
-# A FABRIK IK chain with a middle joint helper.
-
-# The delta/tolerance for the bone chain (how do the bones need to be before it is considered satisfactory)
+# FABRIK IK 链的容差（骨骼需要达到的精度）。
 const CHAIN_TOLERANCE = 0.01
-# The number of iterations the bone chain will go through in an attempt to get to the target position
+# 骨骼链的最大迭代次数。
 const CHAIN_MAX_ITER = 10
 
+## 目标 Skeleton3D 的节点路径。
 @export var skeleton_path: NodePath:
 	set(value):
 		skeleton_path = value
-		# Because get_node doesn't work in the first call, we just want to assign instead
 		if first_call:
 			return
 
 		if skeleton_path == null:
 			if debug_messages:
-				printerr(name, " - IK_FABRIK: No Nodepath selected for skeleton_path!")
+				printerr(name, " - IK_FABRIK: 未选择 skeleton_path 的节点路径！")
 			return
 
 		var temp = get_node(skeleton_path)
 		if temp != null:
-			# If it has the method "get_bone_global_pose" it is likely a Skeleton3D
 			if temp.has_method(&"get_bone_global_pose"):
 				skeleton = temp
 				bone_IDs = {}
 
-				# (Delete all of the old bone nodes and) Make all of the bone nodes for each bone in the IK chain
 				_make_bone_nodes()
 
 				if debug_messages:
-					printerr(name, " - IK_FABRIK: Attached to a new skeleton")
-			# If not, then it's (likely) not a Skeleton3D node
+					printerr(name, " - IK_FABRIK: 已连接到新的骨骼")
 			else:
 				skeleton = null
 				if debug_messages:
-					printerr(name, " - IK_FABRIK: skeleton_path does not point to a skeleton!")
+					printerr(name, " - IK_FABRIK: skeleton_path 未指向骨骼节点！")
 		else:
 			if debug_messages:
-				printerr(name, " - IK_FABRIK: No Nodepath selected for skeleton_path!")
+				printerr(name, " - IK_FABRIK: 未选择 skeleton_path 的节点路径！")
 
 
+## IK 链中的骨骼名称数组。
 @export var bones_in_chain: PackedStringArray:
 	set(value):
 		bones_in_chain = value
 		_make_bone_nodes()
 
 
+## IK 链中每根骨骼的长度数组。
 @export var bones_in_chain_lengths: PackedFloat32Array:
 	set(value):
 		bones_in_chain_lengths = value
 		total_length = INF
 
 
+## 更新模式：0=_process, 1=_physics_process, 2=_notification, 3=none。
 @export_enum("_process", "_physics_process", "_notification", "none") var update_mode: int = 0:
 	set(value):
 		update_mode = value
@@ -70,45 +77,47 @@ const CHAIN_MAX_ITER = 10
 			set_notify_transform(true)
 		else:
 			if debug_messages:
-				printerr(name, " - IK_FABRIK: Unknown update mode. NOT updating skeleton")
+				printerr(name, " - IK_FABRIK: 未知更新模式。不更新骨骼")
 			return
 
+## IK 目标节点。
 var target: Node3D = null
 
+## 目标 Skeleton3D 节点引用。
 var skeleton: Skeleton3D
 
-# A dictionary holding all of the bone IDs (from the skeleton) and a dictionary holding
-# all of the bone helper nodes
+## 骨骼 ID 字典（骨骼名称 -> 骨骼索引）。
 var bone_IDs = {}
+## 骨骼辅助节点字典。
 var bone_nodes = {}
 
-# The position of the origin
+## IK 链原点位置。
 var chain_origin = Vector3()
-# The combined length of every bone in the bone chain
+## IK 链所有骨骼的总长度。
 var total_length = INF
-# The amount of iterations we've been through, and whether or not we want to limit our solver to CHAIN_MAX_ITER
-# iterations.
+## 当前迭代次数。
 @export var chain_iterations: int = 0
+## 是否限制迭代次数。
 @export var limit_chain_iterations: bool = true
-# Should we reset chain_iterations on movement during our update method?
+## 是否在每次更新时重置迭代计数。
 @export var reset_iterations_on_update: bool = false
 
-# A boolean to track whether or not we want to move the middle joint towards middle joint target.
+## 是否使用中间关节目标。
 @export var use_middle_joint_target: bool = false
+## 中间关节目标节点。
 var middle_joint_target: Node3D = null
 
-# Have we called _set_skeleton_path or not already. Due to some issues using exported NodePaths,
-# we need to ignore the first _set_skeleton_path call.
+## 首次调用标记。
 var first_call = true
 
-# A boolean to track whether or not we want to print debug messages
+## 是否输出调试信息。
 var debug_messages = false
 
 
+## _ready 入口。初始化目标节点、中间关节目标和骨骼节点。
 func _ready():
 	if target == null:
-		# NOTE: You MUST have a node called Target as a child of this node!
-		# So we create one if one doesn't already exist.
+		# 注意：此节点下必须有一个名为 Target 的子节点！
 		if not has_node(^"Target"):
 			target = Node3D.new()
 			add_child(target)
@@ -122,7 +131,6 @@ func _ready():
 		else:
 			target = $Target
 
-		# If we are in the editor, we want to make a sphere at this node
 		if Engine.is_editor_hint():
 			_make_editor_sphere_at_node(target, Color.MAGENTA)
 
@@ -140,18 +148,14 @@ func _ready():
 		else:
 			middle_joint_target = get_node(^"MiddleJoint")
 
-		# If we are in the editor, we want to make a sphere at this node
 		if Engine.is_editor_hint():
 			_make_editor_sphere_at_node(middle_joint_target, Color(1, 0.24, 1, 1))
 
-	# Make all of the bone nodes for each bone in the IK chain
 	_make_bone_nodes()
 
-	# Make sure we're using the right update mode
 	update_mode = update_mode
 
 
-# Various update methods
 func _process(_delta):
 	if reset_iterations_on_update:
 		chain_iterations = 0
@@ -171,10 +175,11 @@ func _notification(what):
 		update_skeleton()
 
 
-############# IK SOLVER RELATED FUNCTIONS #############
+############# IK 求解器相关函数 #############
 
+## 更新骨骼。初始化骨骼 ID 和总长度，然后求解 IK 链。
 func update_skeleton():
-	#### ERROR CHECKING conditions
+	# 错误检查。
 	if first_call:
 		skeleton_path = skeleton_path
 		first_call = false
@@ -186,111 +191,107 @@ func update_skeleton():
 
 	if bones_in_chain == null:
 		if debug_messages:
-			printerr(name, " - IK_FABRIK: No Bones in IK chain defined!")
+			printerr(name, " - IK_FABRIK: IK 链中未定义骨骼！")
 		return
 	if bones_in_chain_lengths == null:
 		if debug_messages:
-			printerr(name, " - IK_FABRIK: No Bone3D lengths in IK chain defined!")
+			printerr(name, " - IK_FABRIK: IK 链中未定义骨骼长度！")
 		return
 
 	if bones_in_chain.size() != bones_in_chain_lengths.size():
 		if debug_messages:
-			printerr(name, " - IK_FABRIK: bones_in_chain and bones_in_chain_lengths!")
+			printerr(name, " - IK_FABRIK: bones_in_chain 和 bones_in_chain_lengths 大小不匹配！")
 		return
 
-	################################
-
-	# Set all of the bone IDs in bone_IDs, if they are not already made
+	# 如果尚未设置，初始化所有骨骼 ID。
 	var i = 0
 	if bone_IDs.size() <= 0:
 		for bone_name in bones_in_chain:
 			bone_IDs[bone_name] = skeleton.find_bone(bone_name)
 
-			# Set the bone node to the current bone position
 			bone_nodes[i].global_transform = get_bone_transform(i)
-			# If this is not the last bone in the bone chain, make it look at the next bone in the bone chain
 			if i < bone_IDs.size()-1:
 				bone_nodes[i].look_at(get_bone_transform(i+1).origin + skeleton.global_transform.origin, Vector3.UP)
 
 			i += 1
 
-	# Set the total length of the bone chain, if it is not already set
+	# 如果尚未设置，计算总长度。
 	if total_length == INF:
 		total_length = 0
 		for bone_length in bones_in_chain_lengths:
 			total_length += bone_length
 
-	# Solve the bone chain
+	# 求解 IK 链。
 	solve_chain()
 
 
+## FABRIK 求解器主循环。
+##
+## 核心算法：
+## 1. 检查是否达到最大迭代次数
+## 2. 更新原点位置
+## 3. 计算末端执行器方向
+## 4. 计算目标位置（考虑末端骨骼长度）
+## 5. 可选：将中间关节拉向中间目标
+## 6. 循环执行反向传递 -> 正向传递 -> 应用旋转，直到误差在容差范围内
 func solve_chain():
-	# If we have reached our max chain iteration, and we are limiting ourselves, then return.
-	# Otherwise set chain_iterations to zero (so we constantly update)
 	if chain_iterations >= CHAIN_MAX_ITER and limit_chain_iterations:
 		return
 	else:
 		chain_iterations = 0
 
-	# Update the origin with the current bone's origin
 	chain_origin = get_bone_transform(0).origin
 
-	# Get the direction of the final bone by using the next to last bone if there is more than 2 bones.
-	# If there are only 2 bones, we use the target's forward Z vector instead (not ideal, but it works fairly well)
+	# 获取末端骨骼的方向。
 	var dir
 	if bone_nodes.size() > 2:
 		dir = bone_nodes[bone_nodes.size()-2].global_transform.basis.z.normalized()
 	else:
 		dir = -target.global_transform.basis.z.normalized()
 
-	# Get the target position (accounting for the final bone and its length)
+	# 计算目标位置（考虑末端骨骼长度）。
 	var target_pos = target.global_transform.origin + (dir * bones_in_chain_lengths[bone_nodes.size()-1])
 
-	# If we are using middle joint target (and have more than 2 bones), move our middle joint towards it!
+	# 如果使用中间关节目标，将中间关节拉向目标。
 	if use_middle_joint_target:
 		if bone_nodes.size() > 2:
 			var middle_point_pos = middle_joint_target.global_transform.origin
 			var middle_point_pos_diff = (middle_point_pos - bone_nodes[bone_nodes.size()/2].global_transform.origin)
 			bone_nodes[bone_nodes.size()/2].global_transform.origin += middle_point_pos_diff.normalized()
 
-	# Get the difference between our end effector (the final bone in the chain) and the target
+	# 计算末端执行器与目标的距离差。
 	var dif = (bone_nodes[bone_nodes.size()-1].global_transform.origin - target_pos).length()
 
-	# Check to see if the distance from the end effector to the target is within our error margin (CHAIN_TOLERANCE).
-	# If it not, move the chain towards the target (going forwards, backwards, and then applying rotation)
+	# 迭代求解直到误差在容差范围内。
 	while dif > CHAIN_TOLERANCE:
 		chain_backward()
 		chain_forward()
 		chain_apply_rotation()
 
-		# Update the difference between our end effector (the final bone in the chain) and the target
 		dif = (bone_nodes[bone_nodes.size()-1].global_transform.origin - target_pos).length()
 
-		# Add one to chain_iterations. If we have reached our max iterations, then break
 		chain_iterations = chain_iterations + 1
 		if chain_iterations >= CHAIN_MAX_ITER:
 			break
 
-	# Reset the bone node transforms to the skeleton bone transforms
+	# 重置骨骼节点变换为骨骼变换。
 	for i in range(0, bone_nodes.size()):
 		var reset_bone_trans = get_bone_transform(i)
 		bone_nodes[i].global_transform = reset_bone_trans
 
 
-# Backward reaching pass
+## FABRIK 反向传递：从末端执行器向根节点调整位置。
 func chain_backward():
-	# Get the direction of the final bone by using the next to last bone if there is more than 2 bones.
-	# If there are only 2 bones, we use the target's forward Z vector instead (not ideal, but it works fairly well)
 	var dir
 	if bone_nodes.size() > 2:
 		dir = bone_nodes[bone_nodes.size() - 2].global_transform.basis.z.normalized()
 	else:
 		dir = -target.global_transform.basis.z.normalized()
 
-	# Set the position of the end effector (the final bone in the chain) to the target position
+	# 将末端执行器设置到目标位置。
 	bone_nodes[bone_nodes.size()-1].global_transform.origin = target.global_transform.origin + (dir * bones_in_chain_lengths[bone_nodes.size()-1])
 
-	# For all of the other bones, move them towards the target
+	# 反向遍历所有骨骼，向目标方向移动。
 	var i = bones_in_chain.size() - 1
 	while i >= 1:
 		var prev_origin = bone_nodes[i].global_transform.origin
@@ -299,54 +300,40 @@ func chain_backward():
 
 		var r = prev_origin - curr_origin
 		var l = bones_in_chain_lengths[i] / r.length()
-		# Apply the new joint position
 		bone_nodes[i].global_transform.origin = prev_origin.lerp(curr_origin, l)
 
 
-# Forward reaching pass
+## FABRIK 正向传递：从根节点向末端执行器调整位置。
 func chain_forward():
-	# Set root at initial position
+	# 将根节点设回原点。
 	bone_nodes[0].global_transform.origin = chain_origin
 
-	# Go through every bone in the bone chain
+	# 正向遍历所有骨骼。
 	for i in range(bones_in_chain.size() - 1):
 		var curr_origin = bone_nodes[i].global_transform.origin
 		var next_origin = bone_nodes[i + 1].global_transform.origin
 
 		var r = next_origin - curr_origin
 		var l = bones_in_chain_lengths[i] / r.length()
-		# Apply the new joint position, (potentially with constraints), to the bone node
 		bone_nodes[i + 1].global_transform.origin = curr_origin.lerp(next_origin, l)
 
 
-# Make all of the bones rotated correctly.
+## 应用骨骼旋转：根据位置调整所有骨骼的旋转。
 func chain_apply_rotation():
-	# For each bone in the bone chain
 	for i in range(0, bones_in_chain.size()):
-		# Get the bone's transform, NOT converted to world space
 		var bone_trans = get_bone_transform(i, false)
-		# If this is the last bone in the bone chain, rotate the bone so it faces
-		# the same direction as the next to last bone in the bone chain if there are more than
-		# two bones. If there are only two bones, rotate the end effector towards the target
+		# 如果是最后一根骨骼。
 		if i == bones_in_chain.size() - 1:
 			if bones_in_chain.size() > 2:
-				# Get the bone node for this bone, and the previous bone
 				var b_target = bone_nodes[i].global_transform
 				var b_target_two = bone_nodes[i-1].global_transform
 
-				# Convert the bone nodes positions from world space to bone/skeleton space
 				b_target.origin = b_target.origin * skeleton.global_transform
 				b_target_two.origin = b_target_two.origin * skeleton.global_transform
 
-				# Get the direction that the previous bone is pointing towards
 				var dir = (target.global_transform.origin - b_target_two.origin).normalized()
 
-				# Make this bone look in the same the direction as the last bone
 				bone_trans = bone_trans.looking_at(b_target.origin + dir, Vector3.UP)
-
-				# Set the position of the bone to the bone target.
-				# Prior to Godot 3.2, this was not necessary, but because we can now completely
-				# override bone transforms, we need to set the position as well as rotation.
 				bone_trans.origin = b_target.origin
 
 			else:
@@ -354,77 +341,68 @@ func chain_apply_rotation():
 				b_target.origin = b_target.origin * skeleton.global_transform
 				bone_trans = bone_trans.looking_at(b_target.origin, Vector3.UP)
 
-				# A bit of a hack. Because we only have two bones, we have to use the previous
-				# bone to position the last bone in the chain.
 				var last_bone = bone_nodes[i-1].global_transform
-				# Because we know the length of adjacent bone to this bone in the chain, we can
-				# position this bone by taking the last bone's position plus the length of the
-				# bone on the Z axis.
-				# This will place the position of the bone at the end of the last bone
 				bone_trans.origin = last_bone.origin - last_bone.basis.z.normalized() * bones_in_chain_lengths[i-1]
 
-		# If this is NOT the last bone in the bone chain, rotate the bone to look at the next
-		# bone in the bone chain.
+		# 如果不是最后一根骨骼，使其朝向下一个骨骼。
 		else:
-			# Get the bone node for this bone, and the next bone
 			var b_target = bone_nodes[i].global_transform
 			var b_target_two = bone_nodes[i+1].global_transform
 
-			# Convert the bone nodes positions from world space to bone/skeleton space
 			b_target.origin = b_target.origin * skeleton.global_transform
 			b_target_two.origin = b_target_two.origin * skeleton.global_transform
 
-			# Get the direction towards the next bone
 			var dir = (b_target_two.origin - b_target.origin).normalized()
 
-			# Make this bone look towards the direction of the next bone
 			bone_trans = bone_trans.looking_at(b_target.origin + dir, Vector3.UP)
-
-			# Set the position of the bone to the bone target.
-			# Prior to Godot 3.2, this was not necessary, but because we can now completely
-			# override bone transforms, we need to set the position as well as rotation.
 			bone_trans.origin = b_target.origin
 
-		# The the bone's (updated) transform
 		set_bone_transform(i, bone_trans)
 
 
+## 获取骨骼变换。
+##
+## 参数:
+##   bone: 骨骼索引
+##   convert_to_world_space: 是否转换为世界空间
+##
+## 返回: [Transform3D] 骨骼变换
 func get_bone_transform(bone, convert_to_world_space = true):
-	# Get the global transform of the bone
 	var ret: Transform3D = skeleton.get_bone_global_pose(bone_IDs[bones_in_chain[bone]])
 
-	# If we need to convert the bone position from bone/skeleton space to world space, we
-	# use the Xform of the skeleton (because bone/skeleton space is relative to the position of the skeleton node).
 	if convert_to_world_space:
 		ret.origin = skeleton.global_transform * (ret.origin)
 
 	return ret
 
 
+## 设置骨骼变换。
+##
+## 参数:
+##   bone: 骨骼索引
+##   trans: 要设置的变换
 func set_bone_transform(bone, trans):
-	# Set the global transform of the bone
 	skeleton.set_bone_global_pose_override(bone_IDs[bones_in_chain[bone]], trans, 1.0, true)
 
-############# END OF IK SOLVER RELATED FUNCTIONS #############
+############# IK 求解器相关函数结束 #############
 
 
+## 在编辑器中为目标节点创建可视化球体。
+##
+## 参数:
+##   node: 目标节点
+##   color: 球体颜色
 func _make_editor_sphere_at_node(node, color):
-	# So we can see the target in the editor, let's create a mesh instance,
-	# Add it as our child, and name it
 	var indicator = MeshInstance3D.new()
 	node.add_child(indicator)
-	indicator.name = &"(EditorOnly) Visual indicator"
+	indicator.name = &"(EditorOnly) 可视化指示器"
 
-	# We need to make a mesh for the mesh instance.
-	# The code below makes a small sphere mesh
 	var indicator_mesh = SphereMesh.new()
 	indicator_mesh.radius = 0.1
 	indicator_mesh.height = 0.2
 	indicator_mesh.radial_segments = 8
 	indicator_mesh.rings = 4
 
-	# The mesh needs a material (unless we want to use the default one).
-	# Let's create a material and use the EditorGizmoTexture to texture it.
 	var indicator_material = StandardMaterial3D.new()
 	indicator_material.flags_unshaded = true
 	indicator_material.albedo_texture = preload("editor_gizmo_texture.png")
@@ -432,14 +410,11 @@ func _make_editor_sphere_at_node(node, color):
 	indicator_mesh.material = indicator_material
 	indicator.mesh = indicator_mesh
 
-############# OTHER (NON IK SOLVER RELATED) FUNCTIONS #############
+############# 其他（非 IK 求解器相关）函数 #############
 
+## 创建骨骼辅助节点。
 func _make_bone_nodes():
-	# Remove all of the old bone nodes
-	# TODO: (not a huge concern, as these can be removed in the editor)
-
 	for bone in range(0, bones_in_chain.size()):
-
 		var bone_name = bones_in_chain[bone]
 		if not has_node(bone_name):
 			var new_node = Node3D.new()
@@ -456,6 +431,5 @@ func _make_bone_nodes():
 		else:
 			bone_nodes[bone] = get_node(bone_name)
 
-		# If we are in the editor, we want to make a sphere at this node
 		if Engine.is_editor_hint():
 			_make_editor_sphere_at_node(bone_nodes[bone], Color(0.65, 0, 1, 1))

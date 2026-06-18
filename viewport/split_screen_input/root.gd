@@ -1,11 +1,14 @@
-## Set up different Split Screens
-## Provide Input configuration
-## Connect Split Screens to Play Area
-## 设置多个分屏，提供输入配置，并将分屏连接到共享的游戏区域。
-## 继承自 Node，作为整个场景树的根节点，负责统筹初始化所有分屏及其玩家。
+## 分屏输入根节点 —— 设置多个分屏、提供输入配置、将分屏连接到共享游戏区域。
+##
+## 继承自 [Node]，作为场景的根控制器。
+## 管理 4 套键盘按键方案和最多 4 个手柄，为每个 SplitScreen 子节点分配配置。
 extends Node
 
-
+## 4 套键盘按键方案，用于控制不同玩家的移动。
+## wasd: W/A/S/D 键
+## ijkl: I/J/K/L 键
+## arrows: 方向键
+## numpad: 小键盘 4/5/6/8 键
 const KEYBOARD_OPTIONS: Dictionary[String, Dictionary] = {
 	## 键盘选项字典，键为 String，值为 Dictionary。
 	## 该字典内置了 4 套预设的键盘按键方案，供玩家选择。
@@ -16,9 +19,11 @@ const KEYBOARD_OPTIONS: Dictionary[String, Dictionary] = {
 	"arrows": {"keys": [KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN]},
 	# "arrows" 方案：使用方向键（左、右、上、下）进行控制。
 	"numpad": {"keys": [KEY_KP_4, KEY_KP_5, KEY_KP_6, KEY_KP_8]},
+}
 	# "numpad" 方案：使用小键盘的数字键 4、5、6、8 进行控制。
 } # 4 keyboard sets for moving players around.
 
+## 每个玩家的颜色调制值，用于区分不同玩家。
 const PLAYER_COLORS: Array[Color] = [
 	## 玩家颜色数组，类型为 Array[Color]。
 	## 每个分屏的玩家将按索引获取一种颜色，用于视觉区分。
@@ -29,10 +34,12 @@ const PLAYER_COLORS: Array[Color] = [
 	Color("05ff5a"),
 	# 索引 2：绿色（十六进制色值 05ff5a）。
 	Color("ff05a0")
+]
 	# 索引 3：粉色/洋红色（十六进制色值 ff05a0）。
 ] # Modulate Colors of each Player.
 
 
+## 分屏配置字典模板，包含键盘选项、手柄数量、World2D、位置、索引和颜色。
 var config: Dictionary = {
 	## 分屏配置字典，用于在初始化过程中临时承载参数并传递给每个 SplitScreen。
 	"keyboard": KEYBOARD_OPTIONS,
@@ -46,6 +53,14 @@ var config: Dictionary = {
 	"index": -1,
 	# "index" 项：当前分屏的索引，初始为 -1，后续递增。
 	"color": Color(),
+}
+
+## 所有分屏共享的游戏区域子视口。
+@onready var play_area: SubViewport = $PlayArea
+
+
+## 初始化：遍历所有子节点，为每个 SplitScreen 分配配置。
+## 计算每个分屏的位置（2x2 网格布局），分配颜色和索引。
 	# "color" 项：当前玩家的颜色，初始为空颜色，后续从 PLAYER_COLORS 中选取。
 } # Split Screen configuration Dictionary.
 
@@ -70,6 +85,7 @@ func _ready() -> void:
 		# 使用 is 运算符判断子节点的类型是否为 SplitScreen。
 		# 只有 SplitScreen 类型的节点才需要进行分屏配置初始化。
 		if child is SplitScreen:
+			# 计算分屏位置：2 列布局，每个分屏 132 像素宽，偏移 132 像素
 			# 计算该分屏内玩家的初始位置：
 			# - index % 2 得到当前索引除以 2 的余数（0 或 1），对应 x 坐标列。
 			# - floor(index / 2.0) 得到当前索引除以 2 后向下取整（0 或 1），对应 y 坐标行。

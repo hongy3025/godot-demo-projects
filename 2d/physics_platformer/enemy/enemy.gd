@@ -1,3 +1,5 @@
+## 敌人节点 —— 物理平台游戏的 RigidBody2D 敌人。
+## 在墙壁和悬崖边缘自动转向，被子弹击中后爆炸。
 class_name Enemy
 extends RigidBody2D
 
@@ -17,6 +19,7 @@ var anim: String = ""
 @onready var rc_right := $RaycastRight as RayCast2D
 
 
+## 物理力集成回调 —— 处理移动、碰撞检测和死亡。
 func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 	var velocity := state.get_linear_velocity()
 	var new_anim := anim
@@ -60,12 +63,13 @@ func _integrate_forces(state: PhysicsDirectBodyState2D) -> void:
 	state.set_linear_velocity(velocity)
 
 
+## 死亡后释放自身。
 func _die() -> void:
 	queue_free()
 
 
+## 爆炸前的准备：移除碰撞形状并播放音效。
 func _pre_explode() -> void:
-	#make sure nothing collides against this
 	$Shape1.queue_free()
 	$Shape2.queue_free()
 	$Shape3.queue_free()
@@ -73,6 +77,7 @@ func _pre_explode() -> void:
 	($SoundExplode as AudioStreamPlayer2D).play()
 
 
+## 子弹碰撞回调：进入死亡状态并应用击退效果。
 func _bullet_collider(
 	collider: Bullet,
 	state: PhysicsDirectBodyState2D,

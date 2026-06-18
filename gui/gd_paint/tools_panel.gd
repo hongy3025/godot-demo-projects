@@ -1,22 +1,34 @@
+## 工具面板 —— 简易画图程序的工具栏。
+## 继承自 [Panel]，管理画笔工具选择、颜色设置、画布操作（撤销/保存/清空）等。
 extends Panel
 
+## 画笔设置面板的引用。
 @onready var brush_settings: Control = $BrushSettings
+## 画笔大小标签引用。
 @onready var label_brush_size: Label = brush_settings.get_node(^"LabelBrushSize")
+## 画笔形状标签引用。
 @onready var label_brush_shape: Label = brush_settings.get_node(^"LabelBrushShape")
+## 状态统计标签引用，显示画笔对象数量。
 @onready var label_stats: Label = $LabelStats
+## 当前工具名称标签引用。
 @onready var label_tools: Label = $LabelTools
 
+## 父节点引用。
 @onready var _parent: Control = get_parent()
+## 保存文件对话框引用。
 @onready var save_dialog: FileDialog = _parent.get_node(^"SaveFileDialog")
+## 画布控件引用。
 @onready var paint_control: Control = _parent.get_node(^"PaintControl")
 
+
+## _ready 入口：连接所有按钮和控件的信号。
 func _ready() -> void:
-	# Assign all of the needed signals for the option buttons.
+	# 连接操作按钮信号。
 	$ButtonUndo.pressed.connect(button_pressed.bind("undo_stroke"))
 	$ButtonSave.pressed.connect(button_pressed.bind("save_picture"))
 	$ButtonClear.pressed.connect(button_pressed.bind("clear_picture"))
 
-	# Assign all of the needed signals for the brush buttons.
+	# 连接画笔工具按钮信号。
 	$ButtonToolPencil.pressed.connect(button_pressed.bind("mode_pencil"))
 	$ButtonToolEraser.pressed.connect(button_pressed.bind("mode_eraser"))
 	$ButtonToolRectangle.pressed.connect(button_pressed.bind("mode_rectangle"))
@@ -24,22 +36,28 @@ func _ready() -> void:
 	$BrushSettings/ButtonShapeBox.pressed.connect(button_pressed.bind("shape_rectangle"))
 	$BrushSettings/ButtonShapeCircle.pressed.connect(button_pressed.bind("shape_circle"))
 
-	# Assign all of the needed signals for the other brush settings (and ColorPickerBackground).
+	# 连接颜色选择器和画笔设置信号。
 	$ColorPickerBrush.color_changed.connect(brush_color_changed)
 	$ColorPickerBackground.color_changed.connect(background_color_changed)
 	$BrushSettings/HScrollBarBrushSize.value_changed.connect(brush_size_changed)
 
-	# Assign the "file_selected" signal in SaveFileDialog.
+	# 连接保存文件对话框的文件选择信号。
 	save_dialog.file_selected.connect(save_file_selected)
 
 
+## _physics_process 物理帧更新：更新状态标签，显示当前画笔对象数量。
 func _physics_process(_delta: float) -> void:
-	# Update the status label with the newest brush element count.
 	label_stats.text = "Brush objects: %d" % paint_control.brush_data_list.size()
 
 
+## 按钮点击统一处理函数。根据按钮名称执行对应的操作。
+##
+## 参数:
+##   button_name: 按钮名称字符串，决定执行的操作类型
+##     画笔模式: mode_pencil / mode_eraser / mode_rectangle / mode_circle
+##     画笔形状: shape_rectangle / shape_circle
+##     操作: clear_picture / save_picture / undo_stroke
 func button_pressed(button_name: String) -> void:
-	# If a brush mode button is pressed.
 	var tool_name: String = ""
 	var shape_name: String = ""
 
@@ -60,7 +78,7 @@ func button_pressed(button_name: String) -> void:
 		brush_settings.modulate = Color(1, 1, 1, 0.5)
 		tool_name = "Circle shape"
 
-	# If a brush shape button is pressed
+	# 画笔形状按钮处理
 	elif button_name == "shape_rectangle":
 		paint_control.brush_shape = paint_control.BrushShape.RECTANGLE
 		shape_name = "Rectangle"
@@ -68,7 +86,7 @@ func button_pressed(button_name: String) -> void:
 		paint_control.brush_shape = paint_control.BrushShape.CIRCLE
 		shape_name = "Circle"
 
-	# If an operation button is pressed.
+	# 操作按钮处理
 	elif button_name == "clear_picture":
 		paint_control.brush_data_list.clear()
 		paint_control.queue_redraw()
@@ -77,32 +95,32 @@ func button_pressed(button_name: String) -> void:
 	elif button_name == "undo_stroke":
 		paint_control.undo_stroke()
 
-	# Update the labels (in case the brush mode or brush shape has changed).
+	# 更新工具名称和画笔形状标签
 	if not tool_name.is_empty():
 		label_tools.text = "Selected tool: %s" % tool_name
 	if not shape_name.is_empty():
 		label_brush_shape.text = "Brush shape: %s" % shape_name
 
 
+## 画笔颜色变化回调：将颜色选择器的颜色同步到画布控件。
 func brush_color_changed(color: Color) -> void:
-	# Change the brush color to whatever color the color picker is.
 	paint_control.brush_color = color
 
 
+## 背景颜色变化回调：更新背景面板颜色和画布控件的背景色。
+## 由于橡皮擦的工作方式，还需要重绘画布。
 func background_color_changed(color: Color) -> void:
-	# Change the background color to whatever color the background color picker is.
 	get_parent().get_node(^"DrawingAreaBG").modulate = color
 	paint_control.bg_color = color
-	# Because of how the eraser works we also need to redraw the paint control.
 	paint_control.queue_redraw()
 
 
+## 画笔大小变化回调：更新画笔大小并刷新标签显示。
 func brush_size_changed(value: float) -> void:
-	# Change the size of the brush, and update the label to reflect the new value.
 	paint_control.brush_size = ceilf(value)
 	label_brush_size.text = "Brush size: " + str(ceil(value)) + "px"
 
 
+## 保存文件选择回调：将选择的路径传递给画布控件执行保存。
 func save_file_selected(path: String) -> void:
-	# Call save_picture in paint_control, passing in the path we received from SaveFileDialog.
 	paint_control.save_picture(path)

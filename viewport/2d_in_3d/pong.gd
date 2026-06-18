@@ -1,18 +1,27 @@
+## 乒乓球游戏逻辑 —— 一个简单的双人乒乓球（Pong）游戏实现。
+##
+## 继承自 [Node2D]，作为 2D 游戏的核心逻辑脚本。
+## 包含球和两个球拍的移动、碰撞检测、得分重置等完整游戏逻辑。
+## 此游戏渲染在 SubViewport 中，再映射到 3D 空间中的 Quad 上。
 extends Node2D
 # 继承自 Node2D 类，使该脚本附加的节点具有 2D 空间中的变换能力（位置、旋转、缩放）。
 
+## 球拍的移动速度（像素/秒）。
 const PAD_SPEED = 150
-# 定义常量 PAD_SPEED（球拍移动速度），数值为 150 像素/秒。
+## 球的初始速度。
 const INITIAL_BALL_SPEED = 80.0
 # 定义常量 INITIAL_BALL_SPEED（球的初始速度），数值为 80.0 像素/秒，使用浮点数类型。
 
+## 当前球的速度，每次击中球拍时加速。
 var ball_speed := INITIAL_BALL_SPEED
-# 声明变量 ball_speed（当前球速），并使用类型推断（:=）初始化为 INITIAL_BALL_SPEED。
-# 这个值会在游戏中随着球拍碰撞而增加，因此用变量而非常量。
+## 屏幕尺寸，在 _ready 中根据实际视口大小初始化。
 var screen_size := Vector2(640, 400)
 # 声明变量 screen_size（屏幕尺寸），初始值为 Vector2(640, 400)。
 # 用于判断球的边界碰撞，后续会在 _ready 中更新为实际视口大小。
 
+## 球的默认移动方向。
+var direction := Vector2.LEFT
+## 球拍的尺寸（宽 x 高）。
 # Default ball direction.
 # 英文注释：球的默认运动方向。
 var direction := Vector2.LEFT
@@ -21,15 +30,17 @@ var pad_size := Vector2(8, 32)
 # 声明变量 pad_size（球拍尺寸），初始值为 Vector2(8, 32)。
 # 后续会在 _ready 中根据实际精灵纹理尺寸更新。
 
+## 球的 Sprite2D 节点引用。
 @onready var ball: Sprite2D = $Ball
-# @onready 表示在节点完全进入场景树后执行此行赋值。
-# 获取名为 "Ball" 的子节点（Sprite2D 类型，即球精灵），并赋值给 ball 变量。
+## 左侧球拍的 Sprite2D 节点引用。
 @onready var left_paddle: Sprite2D = $LeftPaddle
-# 获取名为 "LeftPaddle" 的子节点（左球拍精灵），并赋值给 left_paddle 变量。
+## 右侧球拍的 Sprite2D 节点引用。
 @onready var right_paddle: Sprite2D = $RightPaddle
 # 获取名为 "RightPaddle" 的子节点（右球拍精灵），并赋值给 right_paddle 变量。
 
+## 初始化：获取实际屏幕尺寸和球拍纹理尺寸。
 func _ready() -> void:
+	screen_size = get_viewport_rect().size
 	# _ready 是 Godot 的内置虚函数，当节点及其子节点都进入场景树后自动调用一次。
 	# -> void 表示该函数不返回任何值。
 	screen_size = get_viewport_rect().size  # Get actual size.
@@ -40,6 +51,16 @@ func _ready() -> void:
 	# 这样碰撞矩形的尺寸会与实际显示的球拍大小一致。
 
 
+## 每帧更新：处理球移动、碰撞检测、球拍移动。
+## 参数:
+##   delta: 帧时间差（秒）
+##
+## 核心逻辑：
+##   1. 球沿当前方向移动
+##   2. 碰到上下边界时反弹 Y 方向
+##   3. 碰到球拍时反弹 X 方向、加速并随机化 Y 方向
+##   4. 球出界时重置到中心
+##   5. 处理两个球拍的上下移动输入
 func _process(delta: float) -> void:
 	# _process 是 Godot 的内置虚函数，每帧都会被调用一次。
 	# delta 参数表示上一帧到当前帧所经过的时间（秒），用于保证运动速度不受帧率影响。
@@ -53,12 +74,12 @@ func _process(delta: float) -> void:
 	var right_rect := Rect2(right_paddle.get_position() - pad_size * 0.5, pad_size)
 	# 构造右球拍的碰撞矩形，逻辑与左球拍相同。
 
-	# Integrate new ball position.
-	# 英文注释：积分计算球的新位置（基于速度和 delta 时间）。
+	# 更新球的位置
 	ball_pos += direction * ball_speed * delta
 	# 更新球的位置：方向向量 × 当前速度 × 时间增量。
 	# 这样球每帧移动的距离与帧率无关，保证不同设备上速度一致。
 
+	# 碰到上下边界时反弹 Y 方向
 	# Flip when touching roof or floor.
 	# 英文注释：当球碰到顶部或底部边界时，翻转垂直方向。
 	if (ball_pos.y < 0 and direction.y < 0) or (ball_pos.y > screen_size.y and direction.y > 0):
@@ -68,6 +89,7 @@ func _process(delta: float) -> void:
 		direction.y = -direction.y
 		# 将方向向量的 y 分量取反，使球在垂直方向上反弹。
 
+	# 碰到球拍时反弹 X 方向、加速并随机化 Y 方向
 	# Flip, change direction, and increase speed when touching pads.
 	# 英文注释：当球碰到球拍时，水平翻转方向、增加速度，并随机化垂直方向。
 	if (left_rect.has_point(ball_pos) and direction.x < 0) or (right_rect.has_point(ball_pos) and direction.x > 0):
@@ -85,6 +107,7 @@ func _process(delta: float) -> void:
 		direction = direction.normalized()
 		# 将方向向量归一化（长度变为 1），确保球的速度只由 ball_speed 控制，方向不影响速度大小。
 
+	# 球出界时重置到屏幕中心
 	# Check gameover.
 	# 英文注释：检查是否出界（游戏结束/失分条件）。
 	if ball_pos.x < 0 or ball_pos.x > screen_size.x:
@@ -99,6 +122,7 @@ func _process(delta: float) -> void:
 	ball.set_position(ball_pos)
 	# 将更新后的位置应用到球精灵上，使其在屏幕上实际移动。
 
+	# 处理左侧球拍移动（W/S 键或上/下方向键）
 	# Move left pad.
 	# 英文注释：处理左球拍的移动输入。
 	var left_pos := left_paddle.get_position()
@@ -117,6 +141,7 @@ func _process(delta: float) -> void:
 	left_paddle.set_position(left_pos)
 	# 将更新后的位置应用到左球拍精灵上。
 
+	# 处理右侧球拍移动
 	# Move right pad.
 	# 英文注释：处理右球拍的移动输入，逻辑与左球拍完全对称。
 	var right_pos := right_paddle.get_position()

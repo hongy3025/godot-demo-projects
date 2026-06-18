@@ -1,11 +1,12 @@
+## 接触点性能测试 —— 测试大量物体的接触点生成性能。
 extends Test
 
-const OPTION_TYPE_ALL = "Shape type/All"
-const OPTION_TYPE_BOX = "Shape type/Box"
-const OPTION_TYPE_SPHERE = "Shape type/Sphere"
-const OPTION_TYPE_CAPSULE = "Shape type/Capsule"
-const OPTION_TYPE_CYLINDER = "Shape type/Cylinder"
-const OPTION_TYPE_CONVEX = "Shape type/Convex"
+const OPTION_TYPE_ALL = "形状类型/全部"
+const OPTION_TYPE_BOX = "形状类型/盒子"
+const OPTION_TYPE_SPHERE = "形状类型/球体"
+const OPTION_TYPE_CAPSULE = "形状类型/胶囊"
+const OPTION_TYPE_CYLINDER = "形状类型/圆柱"
+const OPTION_TYPE_CONVEX = "形状类型/凸多边形"
 
 @export var spawns: Array[NodePath] = []
 @export var spawn_count: int = 100
@@ -51,7 +52,7 @@ func _physics_process(delta: float) -> void:
 		var time_delta := time - _log_physics_time_usec
 		var time_total := time - _log_physics_time_usec_start
 		_log_physics_time_usec = time
-		Log.print_log("  Physics Tick: %.3f ms (total = %.3f ms)" % [0.001 * time_delta, 0.001 * time_total])
+		Log.print_log("  物理刻: %.3f ms (总计 = %.3f ms)" % [0.001 * time_delta, 0.001 * time_total])
 
 
 func _log_physics_start() -> void:
@@ -90,7 +91,7 @@ func _find_type_index(type_name: String) -> int:
 		if String(type_node.name).find(type_name) > -1:
 			return type_index
 
-	Log.print_error("Invalid shape type: " + type_name)
+	Log.print_error("无效形状类型: " + type_name)
 	return -1
 
 
@@ -105,9 +106,7 @@ func _start_type(type_index: int) -> void:
 		return
 
 	_log_physics_start()
-
 	_spawn_objects(type_index)
-
 	await wait_for_physics_ticks(5).wait_done
 	_log_physics_stop()
 
@@ -116,9 +115,7 @@ func _start_type(type_index: int) -> void:
 		return
 
 	_log_physics_start()
-
 	_activate_objects()
-
 	await wait_for_physics_ticks(5).wait_done
 	_log_physics_stop()
 
@@ -127,9 +124,7 @@ func _start_type(type_index: int) -> void:
 		return
 
 	_log_physics_start()
-
 	_despawn_objects()
-
 	await wait_for_physics_ticks(5).wait_done
 	_log_physics_stop()
 
@@ -137,26 +132,25 @@ func _start_type(type_index: int) -> void:
 
 
 func _start_all_types() -> void:
-	Log.print_log("* Start all types.")
+	Log.print_log("* 开始所有类型。")
 
 	for type_index in _object_templates.size():
 		await _start_type(type_index)
 		if is_timer_canceled():
 			return
 
-	Log.print_log("* Done all types.")
+	Log.print_log("* 完成所有类型。")
 
 
 func _spawn_objects(type_index: int) -> void:
 	var template_node := _object_templates[type_index]
 
-	Log.print_log("* Spawning: " + String(template_node.name))
+	Log.print_log("* 生成: " + String(template_node.name))
 
 	for spawn in spawns:
 		var spawn_parent := get_node(spawn)
 
 		for _node_index in range(spawn_count):
-			# Create a new object and shape every time to avoid the overhead of connecting many bodies to the same shape.
 			var collision := template_node.get_child(0).duplicate()
 			collision.shape = collision.shape.duplicate()
 			var body := template_node.duplicate()
@@ -174,7 +168,7 @@ func _spawn_objects(type_index: int) -> void:
 
 
 func _activate_objects() -> void:
-	Log.print_log("* Activating")
+	Log.print_log("* 激活")
 
 	for spawn in spawns:
 		var spawn_parent := get_node(spawn)
@@ -185,12 +179,11 @@ func _activate_objects() -> void:
 
 
 func _despawn_objects() -> void:
-	Log.print_log("* Despawning")
+	Log.print_log("* 销毁")
 
 	for spawn in spawns:
 		var spawn_parent := get_node(spawn)
 
-		# Remove objects in reversed order to avoid the overhead of changing child index in parent.
 		var object_count := spawn_parent.get_child_count()
 		for object_index in object_count:
 			var node := spawn_parent.get_child(object_count - object_index - 1)

@@ -1,6 +1,8 @@
+## 增强滑块 —— 按住 Shift 时使用更精细的步进值。
 extends HSlider
 
 
+## 默认步进值。
 @export var snap_step := 1.0
 
 

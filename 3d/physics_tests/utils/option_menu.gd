@@ -1,3 +1,4 @@
+## 选项菜单 —— 支持多级子菜单和复选框项的通用菜单按钮。
 class_name OptionMenu
 extends MenuButton
 
@@ -6,6 +7,12 @@ signal option_selected(item_path: String)
 signal option_changed(item_path: String, checked: bool)
 
 
+## 添加菜单项。
+##
+## 参数:
+##   item_path: 用 "/" 分隔的路径，如 "功能测试/形状"
+##   checkbox: 是否为复选框项
+##   checked: 复选框的初始状态
 func add_menu_item(item_path: String, checkbox: bool = false, checked: bool = false) -> void:
 	var path_elements := item_path.split("/", false)
 	var path_element_count := path_elements.size()

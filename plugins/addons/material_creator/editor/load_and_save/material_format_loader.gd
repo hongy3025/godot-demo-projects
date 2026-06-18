@@ -1,38 +1,44 @@
-## Custom loader for the `.silly_mat_loadable` file format.
-## Works together with `SillyMatFormatSaver` to support saving and loading.
-## This class needs to be registered in the EditorPlugin to be used.
+## 自定义资源格式加载器 —— 从 `.silly_mat_loadable` 文件加载 [SillyMaterialResource]。
+## 继承自 [ResourceFormatLoader]，与 [SillyMatFormatSaver] 配合实现资源的读写。
+## 需要在 [EditorPlugin] 中注册才能生效。
 ##
-## Loaders can easily have the loaded data be modified and saved back into
-## the file. However, only one loader can exist, and the loading cannot be
-## configured, unlike importers which are configurable in the "Import" dock.
-## See the "importers" folder for two examples of how to use importers.
+## 与导入器（EditorImportPlugin）的区别：
+## - 加载器/保存器：资源可读写，但同一扩展名只能有一个处理器
+## - 导入器：资源只读，但可在导入面板中配置，且可存在多个
 ##
-## In actual projects, you should either choose ResourceFormatLoader for a
-## writeable resource load, OR EditorImportPlugin(s) for a configurable import.
-## Only one handling can exist at a given time for a given file extension.
-## This demo exposes both by using 2 different file extensions.
+## 本演示使用两种不同的文件扩展名来同时展示两种方式。
 @tool
 class_name SillyMatFormatLoader
 extends ResourceFormatLoader
 
 
-## Callback to return an array of the file extensions this loader can load.
+## 返回此加载器支持的文件扩展名列表。
 func _get_recognized_extensions() -> PackedStringArray:
 	return PackedStringArray(["silly_mat_loadable"])
 
 
-## Callback to return the resource type name based on file extension.
+## 根据文件路径返回资源类型名称。
+## 用于让 Godot 知道此文件对应什么资源类型。
 func _get_resource_type(path: String) -> String:
 	if path.get_extension() == "silly_mat_loadable":
 		return "SillyMaterialResource"
 	return ""
 
 
-## Callback to return what resource type this loader handles.
+## 判断此加载器是否处理指定的资源类型。
+## 参数 type_name 是资源类型名称（如 "SillyMaterialResource"）。
 func _handles_type(type_name: StringName) -> bool:
 	return type_name == &"SillyMaterialResource"
 
 
-## Main callback to actually perform the loading.
+## 执行实际的加载操作。
+## 使用 [SillyMaterialResource.read_from_file] 从文件读取并解析资源。
+##
+## 参数:
+##   path: 文件路径
+##   original_path: 原始路径（通常与 path 相同）
+##   use_sub_threads: 是否使用子线程加载
+##   cache_mode: 缓存模式
+## 返回: [Variant] 加载的资源对象，失败时返回 null
 func _load(path: String, original_path: String, use_sub_threads: bool, cache_mode: int) -> Variant:
 	return SillyMaterialResource.read_from_file(original_path)

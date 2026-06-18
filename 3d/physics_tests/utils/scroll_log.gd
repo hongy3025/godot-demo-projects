@@ -1,3 +1,4 @@
+## 可滚动日志容器 —— 支持自动滚动到最新条目。
 extends ScrollContainer
 
 

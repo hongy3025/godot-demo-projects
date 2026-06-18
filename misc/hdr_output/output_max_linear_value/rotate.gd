@@ -1,7 +1,12 @@
+## HDR 旋转演示 —— 物体绕 Y 轴旋转。
+##
+## 继承自 [Node3D]，以指定速度绕 Y 轴持续旋转。
 extends Node3D
 
+## 旋转速度（弧度/秒）
 @export var rotation_speed: float = 1.0
 
 
+## _process 入口，每帧绕 Y 轴旋转。
 func _process(delta: float) -> void:
 	rotate_y(delta * rotation_speed)

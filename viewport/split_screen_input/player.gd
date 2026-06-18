@@ -1,13 +1,28 @@
-## Player implementation.
-## 玩家角色的实现脚本。
-# 定义类名 Player，使其可以被其他脚本以类型方式引用（如 root.gd、split_screen.gd 中的类型标注）。
+## 分屏输入玩家 —— 接收路由后的输入事件并控制 2D 角色移动。
+##
+## 继承自 [CharacterBody2D]，通过 class_name 注册为可全局使用的类型。
+## 使用 _unhandled_input 接收经过 InputRoutingViewportContainer 过滤后的输入事件，
+## 更新移动方向向量，在 _physics_process 中执行实际移动。
 class_name Player
 
 # 继承自 CharacterBody2D，这是 Godot 4 中专用于 2D 角色移动的物理节点。
 # 它内置了移动和碰撞处理功能，适合作为玩家或 NPC 的基类。
 extends CharacterBody2D
 
+## 移动速度倍率，用于将方向向量转换为实际像素位移。
+const factor: float = 200.0
 
+## 当前移动方向向量，由输入事件更新。
+var _movement: Vector2 = Vector2(0, 0)
+
+
+## 处理到达此子视口的输入事件，更新移动方向。
+## 参数:
+##   input_event: 输入事件对象
+##
+## 支持 ux_up/ux_down/ux_left/ux_right 四个动作。
+## 按键按下时增加对应方向的值，按键释放时减少对应方向的值。
+## 每次处理后调用 set_input_as_handled() 标记事件已处理，防止重复响应。
 ## 移动速度因子，类型为 float，数值为 200.0。
 ## 最终的像素移动速度等于 _movement 向量乘以该因子，单位是 像素/秒。
 const factor: float = 200.0
@@ -54,6 +69,12 @@ func _unhandled_input(input_event: InputEvent) -> void:
 	# 注意：该输入方案采用了一种"相反按键释放时抵消"的设计。
 	# 例如同时按下上和下，_movement.y 先 -1 再 +1，净效果为 0，角色停止垂直移动。
 
+
+## 物理帧更新：根据移动方向向量移动角色。
+## 参数:
+##   delta: 帧时间差（秒）
+##
+## 使用 move_and_collide 进行物理移动，方向向量乘以速度倍率和时间差。
 ## 根据 movement 变量的内容移动节点。
 ## _physics_process 是 Node 的内置虚函数，以固定帧率（与物理同步）被调用。
 ## delta 参数为上一次物理帧到本次所经过的时间（秒），用于保证运动与帧率无关。

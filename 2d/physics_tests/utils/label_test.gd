@@ -1,5 +1,7 @@
+## 测试名称标签 —— 显示当前运行的测试名称。
 extends Label
 
+## 测试名称。
 var test_name: String = "":
 	set(value):
 		if (test_name != value):
