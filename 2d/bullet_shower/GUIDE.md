@@ -33,9 +33,9 @@ shower.tscn
 **核心数据结构：**
 ```gdscript
 class Bullet:
-    var position := Vector2()
-    var speed := 1.0
-    var body := RID()  # 物理体的 RID
+	var position := Vector2()
+	var speed := 1.0
+	var body := RID()  # 物理体的 RID
 ```
 
 **关键方法：**
@@ -56,8 +56,8 @@ class Bullet:
 
 ```gdscript
 func _input(input_event):
-    if input_event is InputEventMouseMotion:
-        position = input_event.position - Vector2(0, 16)
+	if input_event is InputEventMouseMotion:
+		position = input_event.position - Vector2(0, 16)
 ```
 
 - 隐藏鼠标光标，玩家跟随鼠标移动
