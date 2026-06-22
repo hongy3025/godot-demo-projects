@@ -47,7 +47,7 @@ LightMask (Node)
 │   └── PointLight2D
 │       └── LightOccluder2D
 └── CanvasLayer (Foreground, layer 2)
-    └── Sprite2D
+	└── Sprite2D
 ```
 
 ## 6. 如何扩展
