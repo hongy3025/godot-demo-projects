@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D 图形设置技术科普</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --text: #e6edf3;
+  --accent: #58a6ff;
+  --accent-secondary: #f0883e;
+  --green: #3fb950;
+  --green-light: #1a2e1a;
+  --red: #f85149;
+  --orange: #d97706;
+  --orange-light: #2a2200;
+  --purple: #a855f7;
+  --gray: #8b949e;
+  --border: #30363d;
+  --code-bg: #161b22;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  background-image: radial-gradient(ellipse at top, rgba(88,166,255,0.04) 0%, transparent 60%), 
+                    radial-gradient(ellipse at bottom right, rgba(168,85,247,0.03) 0%, transparent 50%);
+  color: var(--text);
+  line-height: 1.8;
+  min-height: 100vh;
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 60px 40px 100px; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+@keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+header { animation: fadeUp 0.6s ease-out forwards; border-bottom: 2px solid var(--border); padding-bottom: 32px; margin-bottom: 48px; position: relative; }
+header::before { content: ''; position: absolute; bottom: -2px; left: 0; width: 120px; height: 2px; background: linear-gradient(90deg, var(--accent), var(--accent-secondary)); }
+header::after { content: ''; position: absolute; bottom: -2px; left: 120px; width: 60px; height: 2px; background: linear-gradient(90deg, var(--accent-secondary), var(--purple)); }
+
+.title-area { position: relative; }
+.title-area h1 {
+  font-family: "Playfair Display", serif;
+  font-size: 42px; font-weight: 800; letter-spacing: -1.5px;
+  background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 12px;
+  line-height: 1.2;
+}
+.subtitle { font-size: 16px; color: var(--gray); margin-bottom: 20px; letter-spacing: 0.5px; }
+.meta { color: var(--gray); font-size: 13px; display: flex; gap: 28px; flex-wrap: wrap; }
+.meta span { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.dot-blue { background: var(--accent); }
+.dot-green { background: var(--green); }
+.dot-orange { background: var(--orange); }
+.dot-purple { background: var(--purple); }
+
+section { animation: fadeUp 0.5s ease-out 0.15s both; }
+section + section { margin-top: 64px; }
+
+h2 {
+  font-family: "Playfair Display", serif;
+  font-size: 28px; font-weight: 700; letter-spacing: -0.5px;
+  margin-bottom: 24px; padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+h2::before { content: ''; position: absolute; bottom: -1px; left: 0; width: 40px; height: 1px; background: var(--accent); }
+h2 .chapter-num { color: var(--accent); font-size: 14px; font-family: "DM Sans", sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 6px; }
+
+h3 { font-size: 20px; font-weight: 600; margin: 32px 0 16px; color: var(--accent); }
+h4 { font-size: 16px; font-weight: 600; margin: 20px 0 12px; color: var(--accent-secondary); }
+
+p { margin-bottom: 16px; font-size: 15px; }
+
+/* KPI 卡片 */
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 24px 0 32px; }
+.kpi {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 12px; padding: 24px; text-align: center;
+  box-shadow: var(--shadow); position: relative; overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.kpi:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+.kpi::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.kpi-blue::before { background: linear-gradient(90deg, var(--accent), #3d7dd8); }
+.kpi-green::before { background: linear-gradient(90deg, var(--green), #2ea043); }
+.kpi-orange::before { background: linear-gradient(90deg, var(--orange), #b45309); }
+.kpi-purple::before { background: linear-gradient(90deg, var(--purple), #9333ea); }
+.kpi .value { font-size: 36px; font-weight: 800; letter-spacing: -1px; font-family: "JetBrains Mono", monospace; }
+.kpi-blue .value { color: var(--accent); }
+.kpi-green .value { color: var(--green); }
+.kpi-orange .value { color: var(--orange); }
+.kpi-purple .value { color: var(--purple); }
+.kpi .label { font-size: 12px; color: var(--gray); margin-top: 6px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; }
+
+/* 卡片 */
+.card {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 16px;
+  padding: 28px; margin: 24px 0; box-shadow: var(--shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
+.card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.card-header .icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: #fff; }
+.icon-a { background: linear-gradient(135deg, var(--accent), #3d7dd8); }
+.icon-b { background: linear-gradient(135deg, var(--purple), #9333ea); }
+.icon-c { background: linear-gradient(135deg, var(--green), #1a9e8f); }
+.icon-d { background: linear-gradient(135deg, var(--orange), #b45309); }
+.card-header h3 { margin: 0; font-size: 18px; color: var(--text); }
+
+/* 信息提示框 */
+.info-box {
+  background: linear-gradient(135deg, rgba(88,166,255,0.1), rgba(88,166,255,0.05));
+  border-left: 4px solid var(--accent);
+  border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 20px 0; font-size: 14px;
+}
+.info-box.warn {
+  background: linear-gradient(135deg, rgba(217,119,6,0.1), rgba(217,119,6,0.05));
+  border-left-color: var(--orange);
+}
+.info-box.success {
+  background: linear-gradient(135deg, rgba(63,185,80,0.1), rgba(63,185,80,0.05));
+  border-left-color: var(--green);
+}
+
+/* 优缺点 */
+.pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+.pros { background: var(--green-light); border: 1px solid rgba(63,185,80,0.3); border-radius: 12px; padding: 20px; }
+.cons { background: rgba(248,81,73,0.08); border: 1px solid rgba(248,81,73,0.3); border-radius: 12px; padding: 20px; }
+.pros h4, .cons h4 { margin: 0 0 12px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
+.pros h4 { color: var(--green); }
+.cons h4 { color: var(--red); }
+.pros ul, .cons ul { margin: 0; padding-left: 20px; }
+.pros li, .cons li { margin: 6px 0; font-size: 14px; }
+
+/* 标签 */
+.tag { display: inline-block; padding: 3px 12px; border-radius: 14px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; border: 1px solid transparent; }
+.tag-blue { background: rgba(88,166,255,0.15); color: var(--accent); border-color: rgba(88,166,255,0.3); }
+.tag-green { background: rgba(63,185,80,0.15); color: var(--green); border-color: rgba(63,185,80,0.3); }
+.tag-orange { background: rgba(217,119,6,0.15); color: var(--orange); border-color: rgba(217,119,6,0.3); }
+.tag-red { background: rgba(248,81,73,0.15); color: var(--red); border-color: rgba(248,81,73,0.3); }
+.tag-purple { background: rgba(168,85,247,0.15); color: var(--purple); border-color: rgba(168,85,247,0.3); }
+
+/* 推荐标记 */
+.recommend {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: linear-gradient(135deg, var(--green), #1a9e8f);
+  color: #fff; padding: 4px 14px; border-radius: 14px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+}
+
+/* 表格 */
+table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
+th { background: linear-gradient(135deg, rgba(88,166,255,0.15), rgba(88,166,255,0.08)); color: var(--accent); font-weight: 600; padding: 12px 16px; text-align: left; border-bottom: 2px solid var(--border); }
+th:first-child { border-radius: 8px 0 0 0; }
+th:last-child { border-radius: 0 8px 0 0; }
+td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+tr:hover { background: rgba(88,166,255,0.05); }
+.highlight-row { background: rgba(88,166,255,0.1) !important; font-weight: 600; }
+
+/* 代码块 */
+pre {
+  background: #1e1e2e; color: #cdd6f4; border-radius: 8px; padding: 20px;
+  overflow-x: auto; font-size: 13px; line-height: 1.7;
+  font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+  margin: 16px 0; border: 1px solid var(--border);
+}
+pre .kw { color: #cba6f7; }
+pre .fn { color: #89b4fa; }
+pre .str { color: #a6e3a1; }
+pre .cmt { color: #6c7086; font-style: italic; }
+pre .num { color: #fab387; }
+pre .op { color: #89dceb; }
+code {
+  background: rgba(88,166,255,0.1); color: var(--accent);
+  padding: 2px 8px; border-radius: 4px; font-size: 13px;
+  font-family: "JetBrains Mono", monospace;
+}
+
+/* SVG 容器 */
+.svg-container {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
+  padding: 24px; margin: 24px 0; text-align: center;
+  box-shadow: var(--shadow); overflow-x: auto;
+}
+.svg-container svg { max-width: 100%; height: auto; }
+.svg-caption { font-size: 12px; color: var(--gray); margin-top: 12px; text-align: center; }
+
+/* 性能星级 */
+.stars { color: var(--orange); letter-spacing: 2px; font-size: 14px; }
+
+/* 对比图 */
+.compare-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin: 20px 0; }
+.compare-item {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
+  padding: 20px; position: relative; overflow: hidden;
+}
+.compare-item::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.compare-item.item-blue::before { background: var(--accent); }
+.compare-item.item-green::before { background: var(--green); }
+.compare-item.item-orange::before { background: var(--orange); }
+.compare-item.item-purple::before { background: var(--purple); }
+.compare-item h4 { margin: 0 0 8px; font-size: 16px; }
+.compare-item p { margin: 0; font-size: 13px; color: var(--gray); }
+
+/* 配置方案卡片 */
+.config-card {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 16px;
+  padding: 24px; margin: 16px 0; position: relative; overflow: hidden;
+  transition: transform 0.2s ease;
+}
+.config-card:hover { transform: translateY(-2px); }
+.config-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+.config-card.low::before { background: linear-gradient(90deg, var(--green), #2ea043); }
+.config-card.mid::before { background: linear-gradient(90deg, var(--accent), #3d7dd8); }
+.config-card.high::before { background: linear-gradient(90deg, var(--orange), #b45309); }
+.config-card.ultra::before { background: linear-gradient(90deg, var(--purple), #9333ea); }
+.config-card .config-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.config-card .config-subtitle { font-size: 12px; color: var(--gray); margin-bottom: 16px; }
+.config-card .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.config-card .config-item { font-size: 13px; }
+.config-card .config-item .key { color: var(--gray); }
+.config-card .config-item .val { color: var(--text); font-weight: 600; }
+
+/* 术语表 */
+.glossary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin: 20px 0; }
+.glossary-item {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 12px 16px; display: flex; gap: 12px; align-items: flex-start;
+}
+.glossary-item .term { font-weight: 700; color: var(--accent); min-width: 80px; font-size: 13px; }
+.glossary-item .def { font-size: 13px; color: var(--gray); }
+
+/* 目录导航 */
+.toc {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 16px;
+  padding: 24px 28px; margin: 32px 0; box-shadow: var(--shadow);
+}
+.toc h3 { margin: 0 0 16px; font-size: 16px; color: var(--text); }
+.toc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 8px; }
+.toc-item { font-size: 13px; color: var(--gray); text-decoration: none; padding: 6px 12px; border-radius: 6px; transition: all 0.2s; display: block; }
+.toc-item:hover { background: rgba(88,166,255,0.1); color: var(--accent); }
+.toc-item .num { color: var(--accent); font-weight: 600; margin-right: 8px; font-family: "JetBrains Mono", monospace; font-size: 11px; }
+
+/* 页脚 */
+footer { margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--border); text-align: center; }
+footer p { font-size: 12px; color: var(--gray); }
+
+/* 分隔线 */
+.section-divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); margin: 48px 0; }
+
+/* 滚动动画 */
+.scroll-reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.scroll-reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .container { padding: 32px 20px 60px; }
+  .title-area h1 { font-size: 28px; }
+  h2 { font-size: 22px; }
+  .kpi-row { grid-template-columns: 1fr 1fr; }
+  .pros-cons { grid-template-columns: 1fr; }
+  .compare-grid { grid-template-columns: 1fr; }
+  .config-card .config-grid { grid-template-columns: 1fr; }
+  .toc-grid { grid-template-columns: 1fr; }
+  .meta { flex-direction: column; gap: 8px; }
+}
+@media (max-width: 480px) {
+  .kpi-row { grid-template-columns: 1fr; }
+  .glossary-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="title-area">
+    <h1>3D 图形设置技术科普</h1>
+    <div class="subtitle">Godot 4.6 Graphics Settings 示例项目 · 深入理解每个图形设置的原理与权衡</div>
+    <div class="meta">
+      <span><span class="dot dot-blue"></span> 引擎：Godot 4.6 Forward+</span>
+      <span><span class="dot dot-green"></span> 覆盖：6 大类 25+ 设置项</span>
+      <span><span class="dot dot-orange"></span> 来源：官方 Demo 项目</span>
+      <span><span class="dot dot-purple"></span> 日期：2026-06-22</span>
+    </div>
+  </div>
+</header>
+
+<!-- KPI 概览 -->
+<div class="kpi-row">
+  <div class="kpi kpi-blue">
+    <div class="value">6</div>
+    <div class="label">设置大类</div>
+  </div>
+  <div class="kpi kpi-green">
+    <div class="value">25+</div>
+    <div class="label">独立设置项</div>
+  </div>
+  <div class="kpi kpi-orange">
+    <div class="value">5</div>
+    <div class="label">质量预设档位</div>
+  </div>
+  <div class="kpi kpi-purple">
+    <div class="value">4</div>
+    <div class="label">抗锯齿方案</div>
+  </div>
+</div>
+
+<!-- 目录 -->
+<nav class="toc">
+  <h3>目录导航</h3>
+  <div class="toc-grid">
+    <a class="toc-item" href="#ch1"><span class="num">01</span>渲染器基础</a>
+    <a class="toc-item" href="#ch2"><span class="num">02</span>分辨率与缩放</a>
+    <a class="toc-item" href="#ch3"><span class="num">03</span>抗锯齿技术</a>
+    <a class="toc-item" href="#ch4"><span class="num">04</span>窗口与显示模式</a>
+    <a class="toc-item" href="#ch5"><span class="num">05</span>帧率与同步</a>
+    <a class="toc-item" href="#ch6"><span class="num">06</span>视场角 (FOV)</a>
+    <a class="toc-item" href="#ch7"><span class="num">07</span>阴影系统</a>
+    <a class="toc-item" href="#ch8"><span class="num">08</span>细节层次 (LOD)</a>
+    <a class="toc-item" href="#ch9"><span class="num">09</span>全局光照</a>
+    <a class="toc-item" href="#ch10"><span class="num">10</span>环境光遮蔽 (SSAO)</a>
+    <a class="toc-item" href="#ch11"><span class="num">11</span>屏幕空间反射 (SSR)</a>
+    <a class="toc-item" href="#ch12"><span class="num">12</span>屏幕空间间接光照 (SSIL)</a>
+    <a class="toc-item" href="#ch13"><span class="num">13</span>辉光与泛光 (Glow)</a>
+    <a class="toc-item" href="#ch14"><span class="num">14</span>体积雾</a>
+    <a class="toc-item" href="#ch15"><span class="num">15</span>超级分辨率 (FSR)</a>
+    <a class="toc-item" href="#ch16"><span class="num">16</span>色彩与画面调节</a>
+    <a class="toc-item" href="#ch17"><span class="num">17</span>PBR 材质与纹理</a>
+    <a class="toc-item" href="#ch18"><span class="num">18</span>性能与画质权衡</a>
+  </div>
+</nav>
+
+<!-- ===== 章节 1：渲染器基础 ===== -->
+<section id="ch1" class="scroll-reveal">
+<h2><span class="chapter-num">Chapter 01</span>渲染器基础</h2>
+
+<p>渲染器是游戏引擎中负责将 3D 场景转换为 2D 图像的核心组件。它决定了你能使用哪些高级图形特效。</p>
+
+<h3>Godot 4 的三种渲染器</h3>
+
+<div class="compare-grid">
+  <div class="compare-item item-blue">
+    <h4>Forward+</h4>
+    <p>基于 Vulkan，支持所有高级特效。适用于现代 PC/主机，追求最佳画质。</p>
+    <div style="margin-top:12px"><span class="tag tag-green">推荐</span> <span class="tag tag-blue">Vulkan</span></div>
+  </div>
+  <div class="compare-item item-orange">
+    <h4>Mobile</h4>
+    <p>简化版 Forward+，减少 GPU 开销。适用于中高端移动设备。</p>
+    <div style="margin-top:12px"><span class="tag tag-orange">移动</span></div>
+  </div>
+  <div class="compare-item item-purple">
+    <h4>Compatibility</h4>
+    <p>基于 OpenGL，功能最少。适用于低端设备、Web 导出。</p>
+    <div style="margin-top:12px"><span class="tag tag-red">功能受限</span></div>
+  </div>
+</div>
+
+<div class="svg-container">
+  <svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 6" refX="10" refY="3" markerWidth="10" markerHeight="6" orient="auto">
+        <path d="M0,0 L10,3 L0,6 Z" fill="#58a6ff"/>
+      </marker>
+      <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:#58a6ff;stop-opacity:0.2"/>
+        <stop offset="100%" style="stop-color:#58a6ff;stop-opacity:0.05"/>
+      </linearGradient>
+    </defs>
+    <!-- Forward+ -->
+    <rect x="20" y="30" width="220" height="120" rx="12" fill="rgba(63,185,80,0.1)" stroke="#3fb950" stroke-width="2"/>
+    <text x="130" y="65" text-anchor="middle" fill="#3fb950" font-size="16" font-weight="700">Forward+</text>
+    <text x="130" y="90" text-anchor="middle" fill="#8b949e" font-size="12">Vulkan · 全部特效</text>
+    <text x="130" y="110" text-anchor="middle" fill="#8b949e" font-size="11">TAA · SDFGI · SSAO · SSR · SSIL</text>
+    <text x="130" y="130" text-anchor="middle" fill="#8b949e" font-size="11">体积雾 · FSR · MSAA</text>
+    <!-- Mobile -->
+    <rect x="290" y="30" width="220" height="120" rx="12" fill="rgba(217,119,6,0.1)" stroke="#d97706" stroke-width="2"/>
+    <text x="400" y="65" text-anchor="middle" fill="#d97706" font-size="16" font-weight="700">Mobile</text>
+    <text x="400" y="90" text-anchor="middle" fill="#8b949e" font-size="12">Vulkan 简化版</text>
+    <text x="400" y="110" text-anchor="middle" fill="#8b949e" font-size="11">部分后处理效果</text>
+    <text x="400" y="130" text-anchor="middle" fill="#8b949e" font-size="11">优化移动 GPU</text>
+    <!-- Compatibility -->
+    <rect x="560" y="30" width="220" height="120" rx="12" fill="rgba(248,81,73,0.1)" stroke="#f85149" stroke-width="2"/>
+    <text x="670" y="65" text-anchor="middle" fill="#f85149" font-size="16" font-weight="700">Compatibility</text>
+    <text x="670" y="90" text-anchor="middle" fill="#8b949e" font-size="12">OpenGL · 功能最少</text>
+    <text x="670" y="110" text-anchor="middle" fill="#f85149" font-size="11">无 TAA/FSR/SDFGI/SSAO</text>
+    <text x="670" y="130" text-anchor="middle" fill="#f85149" font-size="11">无 SSR/SSIL/体积雾</text>
+    <!-- 箭头 -->
+    <line x1="240" y1="90" x2="290" y2="90" stroke="#30363d" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="510" y1="90" x2="560" y2="90" stroke="#30363d" stroke-width="2" marker-end="url(#arrow)"/>
+    <!-- 标签 -->
+    <text x="265" y="80" text-anchor="middle" fill="#8b949e" font-size="10">功能递减</text>
+    <text x="535" y="80" text-anchor="middle" fill="#8b949e" font-size="10">功能递减</text>
+    <!-- 底部说明 -->
+    <rect x="160" y="200" width="480" height="80" rx="8" fill="rgba(88,166,255,0.05)" stroke="#30363d" stroke-width="1"/>
+    <text x="400" y="225" text-anchor="middle" fill="#58a6ff" font-size="13" font-weight="600">运行时自动检测</text>
+    <text x="400" y="248" text-anchor="middle" fill="#8b949e" font-size="12">本项目通过 RenderingServer.get_current_rendering_method() 检测渲染器</text>
+    <text x="400" y="268" text-anchor="middle" fill="#8b949e" font-size="12">Compatibility 模式自动禁用不支持的选项并调整光照补偿</text>
+  </svg>
+  <div class="svg-caption">三种渲染器的功能覆盖对比</div>
+</div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ===== 章节 2：分辨率与缩放 ===== -->
+<section id="ch2" class="scroll-reveal">
+<h2><span class="chapter-num">Chapter 02</span>分辨率与缩放</h2>
+
+<h3>2.1 渲染分辨率</h3>
+<p>GPU 实际绘制画面的像素数量，可以独立于窗口/屏幕分辨率。降低缩放可大幅提升帧率，但画面会模糊；提高缩放可获得超采样抗锯齿效果，但 GPU 负担极重。</p>
+
+<pre>
+<span class="cmt">// 实际渲染像素 = 窗口分辨率 × 缩放比例</span>
+<span class="fn">实际渲染</span> <span class="op">=</span> <span class="num">1920</span>×<span class="num">1080</span> <span class="op">×</span> <span class="num">0.5</span>  →  <span class="num">960</span>×<span class="num">540</span>   <span class="cmt">// 降低：模糊但快</span>
+<span class="fn">实际渲染</span> <span class="op">=</span> <span class="num">1920</span>×<span class="num">1080</span> <span class="op">×</span> <span class="num">2.0</span>  →  <span class="num">3840</span>×<span class="num">2160</span> <span class="cmt">// 提高：清晰但慢</span>
+</pre>
+
+<div class="info-box">
+  <strong>性能影响</strong>：⭐⭐⭐⭐⭐（影响极大）——像素数量呈平方变化，0.5x 缩放意味着只有 1/4 的像素需要渲染。
+</div>
+
+<h3>2.2 缩放滤镜</h3>
+<p>当渲染分辨率低于窗口分辨率时，需要将低分辨率图像放大。不同的放大算法产生不同的效果：</p>
+
+<table>
+  <tr><th>滤镜</th><th>原理</th><th>效果</th><th>性能</th></tr>
+  <tr><td><span class="tag tag-blue">Bilinear</span></td><td>取周围 4 个像素加权平均</td><td>最快，但画面模糊</td><td><span class="stars">★☆☆☆☆</span></td></tr>
+  <tr><td><span class="tag tag-green">FSR 1.0</span></td><td>AMD 开源算法，边缘感知锐化</td><td>速度快，效果好</td><td><span class="stars">★★☆☆☆</span></td></tr>
+  <tr><td><span class="tag tag-purple">FSR 2.2</span></td><td>加入时间信息（利用前几帧）</td><td>质量更高</td><td><span class="stars">★★★☆☆</span></td></tr>
+</table>
+
+<div class="svg-container">
+  <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- 低分辨率 -->
+    <rect x="20" y="30" width="120" height="120" rx="4" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <rect x="30" y="40" width="25" height="25" fill="#58a6ff" opacity="0.3"/>
+    <rect x="55" y="40" width="25" height="25" fill="#58a6ff" opacity="0.5"/>
+    <rect x="80" y="40" width="25" height="25" fill="#58a6ff" opacity="0.7"/>
+    <rect x="105" y="40" width="25" height="25" fill="#58a6ff" opacity="0.9"/>
+    <rect x="30" y="65" width="25" height="25" fill="#58a6ff" opacity="0.4"/>
+    <rect x="55" y="65" width="25" height="25" fill="#58a6ff" opacity="0.6"/>
+    <rect x="80" y="65" width="25" height="25" fill="#58a6ff" opacity="0.8"/>
+    <rect x="105" y="65" width="25" height="25" fill="#58a6ff" opacity="1.0"/>
+    <text x="80" y="170" text-anchor="middle" fill="#8b949e" font-size="12">低分辨率 (4×4)</text>
+    <!-- 箭头 -->
+    <line x1="160" y1="90" x2="220" y2="90" stroke="#58a6ff" stroke-width="2"/>
+    <polygon points="220,85 230,90 220,95" fill="#58a6ff"/>
+    <!-- 双线性 -->
+    <rect x="240" y="30" width="120" height="120" rx="4" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <rect x="250" y="40" width="12" height="12" fill="#58a6ff" opacity="0.35" rx="1"/>
+    <rect x="262" y="40" width="12" height="12" fill="#58a6ff" opacity="0.45" rx="1"/>
+    <rect x="274" y="40" width="12" height="12" fill="#58a6ff" opacity="0.55" rx="1"/>
+    <rect x="286" y="40" width="12" height="12" fill="#58a6ff" opacity="0.65" rx="1"/>
+    <rect x="250" y="52" width="12" height="12" fill="#58a6ff" opacity="0.40" rx="1"/>
+    <rect x="262" y="52" width="12" height="12" fill="#58a6ff" opacity="0.50" rx="1"/>
+    <rect x="274" y="52" width="12" height="12" fill="#58a6ff" opacity="0.60" rx="1"/>
+    <rect x="286" y="52" width="12" height="12" fill="#58a6ff" opacity="0.70" rx="1"/>
+    <text x="300" y="170" text-anchor="middle" fill="#d97706" font-size="12">Bilinear（模糊）</text>
+    <!-- FSR -->
+    <rect x="410" y="30" width="120" height="120" rx="4" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <rect x="420" y="40" width="12" height="12" fill="#3fb950" opacity="0.4" rx="1"/>
+    <rect x="432" y="40" width="12" height="12" fill="#3fb950" opacity="0.6" rx="1"/>
+    <rect x="444" y="40" width="12" height="12" fill="#3fb950" opacity="0.8" rx="1"/>
+    <rect x="456" y="40" width="12" height="12" fill="#3fb950" opacity="1.0" rx="1"/>
+    <rect x="420" y="52" width="12" height="12" fill="#3fb950" opacity="0.5" rx="1"/>
+    <rect x="432" y="52" width="12" height="12" fill="#3fb950" opacity="0.7" rx="1"/>
+    <rect x="444" y="52" width="12" height="12" fill="#3fb950" opacity="0.9" rx="1"/>
+    <rect x="456" y="52" width="12" height="12" fill="#3fb950" opacity="1.0" rx="1"/>
+    <text x="470" y="170" text-anchor="middle" fill="#3fb950" font-size="12">FSR 1.0（锐利）</text>
+    <!-- 标注 -->
+    <text x="370" y="15" text-anchor="middle" fill="#58a6ff" font-size="14" font-weight="600">放大算法对比</text>
+  </svg>
+  <div class="svg-caption">同一低分辨率图像经不同滤镜放大后的效果示意</div>
+</div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ===== 章节 3：抗锯齿 ===== -->
+<section id="ch3" class="scroll-reveal">
+<h2><span class="chapter-num">Chapter 03</span>抗锯齿技术</h2>
+
+<p>3D 模型的边缘在光栅化时，由于像素是方形的离散单元，斜线和曲线边缘会出现阶梯状的"锯齿"。抗锯齿技术旨在消除或减弱这种视觉瑕疵。</p>
+
+<div class="svg-container">
+  <svg viewBox="0 0 700 160" xmlns="http://www.w3.org/2000/svg">
+    <!-- 锯齿斜线 -->
+    <text x="100" y="20" text-anchor="middle" fill="#f85149" font-size="13" font-weight="600">锯齿</text>
+    <rect x="40" y="35" width="20" height="20" fill="#58a6ff" opacity="0.8" rx="2"/>
+    <rect x="55" y="55" width="20" height="20" fill="#58a6ff" opacity="0.8" rx="2"/>
+    <rect x="70" y="75" width="20" height="20" fill="#58a6ff" opacity="0.8" rx="2"/>
+    <rect x="85" y="95" width="20" height="20" fill="#58a6ff" opacity="0.8" rx="2"/>
+    <rect x="100" y="115" width="20" height="20" fill="#58a6ff" opacity="0.8" rx="2"/>
+    <rect x="115" y="135" width="20" height="20" fill="#58a6ff" opacity="0.8" rx="2"/>
+    <!-- 抗锯齿 -->
+    <text x="300" y="20" text-anchor="middle" fill="#3fb950" font-size="13" font-weight="600">抗锯齿后</text>
+    <rect x="240" y="35" width="20" height="20" fill="#58a6ff" opacity="0.6" rx="2"/>
+    <rect x="255" y="45" width="20" height="20" fill="#58a6ff" opacity="0.7" rx="2"/>
+    <rect x="270" y="55" width="20" height="20" fill="#58a6ff" opacity="0.5" rx="2"/>
+    <rect x="270" y="75" width="20" height="20" fill="#58a6ff" opacity="0.7" rx="2"/>
+    <rect x="285" y="85" width="20" height="20" fill="#58a6ff" opacity="0.6" rx="2"/>
+    <rect x="300" y="95" width="20" height="20" fill="#58a6ff" opacity="0.5" rx="2"/>
+    <rect x="300" y="115" width="20" height="20" fill="#58a6ff" opacity="0.7" rx="2"/>
+    <rect x="315" y="125" width="20" height="20" fill="#58a6ff" opacity="0.6" rx="2"/>
+    <!-- 中间过渡像素 -->
+    <rect x="255" y="35" width="20" height="20" fill="#58a6ff" opacity="0.2" rx="2"/>
+    <rect x="270" y="45" width="20" height="20" fill="#58a6ff" opacity="0.3" rx="2"/>
+    <rect x="285" y="75" width="20" height="20" fill="#58a6ff" opacity="0.3" rx="2"/>
+    <rect x="300" y="85" width="20" height="20" fill="#58a6ff" opacity="0.2" rx="2"/>
+    <rect x="315" y="115" width="20" height="20" fill="#58a6ff" opacity="0.3" rx="2"/>
+    <!-- 方案对比 -->
+    <text x="550" y="20" text-anchor="middle" fill="#58a6ff" font-size="13" font-weight="600">四种方案</text>
+    <rect x="430" y="35" width="110" height="30" rx="6" fill="rgba(88,166,255,0.1)" stroke="#58a6ff" stroke-width="1"/>
+    <text x="485" y="55" text-anchor="middle" fill="#58a6ff" font-size="11" font-weight="600">MSAA 多重采样</text>
+    <rect x="550" y="35" width="110" height="30" rx="6" fill="rgba(168,85,247,0.1)" stroke="#a855f7" stroke-width="1"/>
+    <text x="605" y="55" text-anchor="middle" fill="#a855f7" font-size="11" font-weight="600">TAA 时间抗锯齿</text>
+    <rect x="430" y="75" width="110" height="30" rx="6" fill="rgba(63,185,80,0.1)" stroke="#3fb950" stroke-width="1"/>
+    <text x="485" y="95" text-anchor="middle" fill="#3fb950" font-size="11" font-weight="600">FXAA 快速近似</text>
+    <rect x="550" y="75" width="110" height="30" rx="6" fill="rgba(217,119,6,0.1)" stroke="#d97706" stroke-width="1"/>
+    <text x="605" y="95" text-anchor="middle" fill="#d97706" font-size="11" font-weight="600">SMAA 子像素</text>
+    <!-- 连线 -->
+    <line x1="485" y1="65" x2="485" y2="120" stroke="#30363d" stroke-width="1" stroke-dasharray="4,3"/>
+    <line x1="605" y1="65" x2="605" y2="120" stroke="#30363d" stroke-width="1" stroke-dasharray="4,3"/>
+    <line x1="485" y1="105" x2="485" y2="120" stroke="#30363d" stroke-width="1" stroke-dasharray="4,3"/>
+    <line x1="605" y1="105" x2="605" y2="120" stroke="#30363d" stroke-width="1" stroke-dasharray="4,3"/>
+    <line x1="430" y1="120" x2="660" y2="120" stroke="#30363d" stroke-width="1"/>
+    <text x="545" y="145" text-anchor="middle" fill="#8b949e" font-size="11">质量 ↑ | 性能消耗 ↑</text>
+  </svg>
+  <div class="svg-caption">锯齿产生原理与四种抗锯齿方案定位</div>
+</div>
+
+<h3>方案详细对比</h3>
+<table>
+  <tr><th>方法</th><th>原理</th><th>优点</th><th>缺点</th><th>性能</th></tr>
+  <tr>
+    <td><span class="tag tag-blue">MSAA</span></td>
+    <td>每像素多采样点，判断覆盖比例</td>
+    <td>几何边缘效果好</td>
+    <td>无法处理纹理内部锯齿</td>
+    <td><span class="stars">★★★☆☆</span> ~ <span class="stars">★★★★★</span></td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-purple">TAA</span></td>
+    <td>利用时间维度，亚像素抖动+多帧混合</td>
+    <td>效果好，处理所有锯齿</td>
+    <td>移动时可能有鬼影</td>
+    <td><span class="stars">★★★☆☆</span></td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-green">FXAA</span></td>
+    <td>后处理阶段检测边缘并模糊</td>
+    <td>速度极快</td>
+    <td>会模糊整个画面</td>
+    <td><span class="stars">★☆☆☆☆</span></td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-orange">SMAA</span></td>
+    <td>检测边缘模式，精确混合</td>
+    <td>比 FXAA 清晰</td>
+    <td>效果介于两者之间</td>
+    <td><span class="stars">★★☆☆☆</span></td>
+  </tr>
+</table>
+
+<div class="info-box success">
+  <strong>提示</strong>：这些方法可以组合使用。例如 TAA + SMAA 可以获得更好的效果。本项目中 MSAA 和 TAA 是互斥的。
+</div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ===== 章节 4：窗口与显示模式 ===== -->
+<section id="ch4" class="scroll-reveal">
+<h2><span class="chapter-num">Chapter 04</span>窗口与显示模式</h2>
+
+<div class="compare-grid">
+  <div class="compare-item item-blue">
+    <h4>窗口模式</h4>
+    <p>标准桌面窗口，有标题栏和边框。方便切换到其他程序，但窗口装饰占用少量 GPU。</p>
+    <div style="margin-top:12px"><span class="tag tag-blue">开发调试</span></div>
+  </div>
+  <div class="compare-item item-green">
+    <h4>无边框全屏</h4>
+    <p>覆盖整个屏幕但无边框。切换程序时不闪烁，多显示器体验好。比独占全屏略慢。</p>
+    <div style="margin-top:12px"><span class="tag tag-green">推荐日常</span></div>
+  </div>
+  <div class="compare-item item-orange">
+    <h4>独占全屏</h4>
+    <p>直接控制显示输出，绕过窗口管理器。性能最好，输入延迟最低。切换程序时会黑屏。</p>
+    <div style="margin-top:12px"><span class="tag tag-orange">电竞首选</span></div>
+  </div>
+</div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ===== 章节 5：帧率与同步 ===== -->
+<section id="ch5" class="scroll-reveal">
+<h2><span class="chapter-num">Chapter 05</span>帧率与同步</h2>
+
+<h3>帧率参考</h3>
+<table>
+  <tr><th>帧率</th><th>体感</th><th>典型场景</th></tr>
+  <tr><td>30 FPS</td><td>可接受，有轻微卡顿</td><td>主机游戏保底</td></tr>
+  <tr><td>60 FPS</td><td>流畅</td><td>PC 游戏标准目标</td></tr>
+  <tr><td>120+ FPS</td><td>非常流畅</td><td>电竞、高刷显示器</td></tr>
+</table>
+
+<h3>垂直同步 (V-Sync)</h3>
+<p>显示器以固定频率刷新（如 60Hz），如果 GPU 提交画面的时机不对，会出现<strong>画面撕裂</strong>——上半部分是上一帧，下半部分是下一帧。</p>
+
+<div class="svg-container">
+  <svg viewBox="0 0 600 180" xmlns="http://www.w3.org/2000/svg">
+    <!-- 正常画面 -->
+    <rect x="20" y="20" width="160" height="120" rx="8" fill="#161b22" stroke="#3fb950" stroke-width="2"/>
+    <text x="100" y="70" text-anchor="middle" fill="#3fb950" font-size="12" font-weight="600">正常画面</text>
+    <text x="100" y="90" text-anchor="middle" fill="#8b949e" font-size="11">完整的一帧</text>
+    <text x="100" y="155" text-anchor="middle" fill="#8b949e" font-size="11">V-Sync 开启</text>
+    <!-- 撕裂画面 -->
+    <rect x="220" y="20" width="160" height="120" rx="8" fill="#161b22" stroke="#f85149" stroke-width="2"/>
+    <line x1="220" y1="80" x2="380" y2="80" stroke="#f85149" stroke-width="2" stroke-dasharray="6,3"/>
+    <text x="300" y="55" text-anchor="middle" fill="#58a6ff" font-size="11">帧 A（上半）</text>
+    <text x="300" y="105" text-anchor="middle" fill="#a855f7" font-size="11">帧 B（下半）</text>
+    <text x="300" y="155" text-anchor="middle" fill="#8b949e" font-size="11">V-Sync 关闭</text>
+    <!-- 解释 -->
+    <rect x="420" y="20" width="160" height="120" rx="8" fill="rgba(88,166,255,0.05)" stroke="#30363d" stroke-width="1"/>
+    <text x="500" y="50" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="600">三种模式</text>
+    <text x="500" y="75" text-anchor="middle" fill="#8b949e" font-size="10">禁用：自由提交</text>
+    <text x="500" y="95" text-anchor="middle" fill="#8b949e" font-size="10">启用：等待同步</text>
+    <text x="500" y="115" text-anchor="middle" fill="#8b949e" font-size="10">自适应：智能切换</text>
+  </svg>
+  <div class="svg-caption">画面撕裂现象与垂直同步的作用</div>
+</div>
+
+<div class="info-box warn">
+  <strong>帧率限制的妙用</strong>：限制到略低于刷新率（如 58 FPS），可避免 V-Sync 导致的帧率骤降（从 60 直接掉到 30），同时减少 GPU 功耗和发热。
+</div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ===== 章节 6：FOV ===== -->
+<section id="ch6" class="scroll-reveal">
+<h2><span class="chapter-num">Chapter 06</span>视场角 (FOV)</h2>
+
+<p>FOV 是摄像机"视野范围"的角度，决定了你能看到多大范围的场景。</p>
+
+<div class="svg-container">
+  <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- 窄 FOV -->
+    <polygon points="100,160 60,40 140,40" fill="rgba(88,166,255,0.1)" stroke="#58a6ff" stroke-width="1.5"/>
+    <circle cx="100" cy="170" r="8" fill="#58a6ff"/>
+    <text x="100" y="195" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="600">FOV 50°</text>
+    <text x="100" y="30" text-anchor="middle" fill="#8b949e" font-size="10">窄视野</text>
+    <!-- 中 FOV -->
+    <polygon points="350,160 270,40 430,40" fill="rgba(63,185,80,0.1)" stroke="#3fb950" stroke-width="1.5"/>
+    <circle cx="350" cy="170" r="8" fill="#3fb950"/>
+    <text x="350" y="195" text-anchor="middle" fill="#3fb950" font-size="12" font-weight="600">FOV 75°</text>
+    <text x="350" y="30" text-anchor="middle" fill="#8b949e" font-size="10">标准视野</text>
+    <!-- 宽 FOV -->
+    <polygon points="600,160 480,40 720,40" fill="rgba(217,119,6,0.1)" stroke="#d97706" stroke-width="1.5"/>
+    <circle cx="600" cy="170" r="8" fill="#d97706"/>
+    <text x="600" y="195" text-anchor="middle" fill="#d97706" font-size="12" font-weight="600">FOV 110°</text>
+    <text x="600" y="30" text-anchor="middle" fill="#8b949e" font-size="10">宽视野</text>
+  </svg>
+  <div class="svg-caption">不同 FOV 值的视野范围对比</div>
+</div>
+
+<table>
+  <tr><th>FOV 值</th><th>效果</th><th>适用场景</th></tr>
+  <tr><td>50-60°</td><td>望远镜效果，物体大，有"压缩感"</td><td>远距离观察、狙击镜</td></tr>
+  <tr><td>70-90°</td><td>接近人眼自然视角</td><td>大多数游戏</td></tr>
+  <tr><td>100°+</td><td>鱼眼效果，视野广阔但边缘畸变</td><td>赛车游戏、VR</td></tr>
+</table>
+
+<div class="info-box">
+  <strong>晕动症提示</strong>：低 FOV 让玩家感觉"通过望远镜看世界"，旋转时视野变化剧烈，容易导致晕动症。适当提高 FOV 可以缓解。
+</div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ===== 章节 7：阴影系统 ===== -->
+<section id="ch7" class="scroll-reveal">
+<h2><span class="chapter-num">Chapter 07</span>阴影系统</h2>
+
+<h3>阴影贴图原理</h3>
+<p>实时阴影使用<strong>阴影贴图 (Shadow Map)</strong> 技术：从光源视角渲染深度信息，然后在正常渲染时比较深度判断是否被遮挡。</p>
+
+<div class="svg-container">
+  <svg viewBox="0 0 700 250" xmlns="http://www.w3.org/2000/svg">
+    <!-- 步骤1：光源渲染 -->
+    <rect x="20" y="20" width="200" height="150" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <text x="120" y="45" text-anchor="middle" fill="#58a6ff" font-size="13" font-weight="600">步骤 1：光源视角</text>
+    <rect x="40" y="60" width="160" height="80" rx="4" fill="#1a1a2e"/>
+    <rect x="80" y="80" width="40" height="40" fill="#58a6ff" opacity="0.3" rx="2"/>
+    <rect x="90" y="90" width="20" height="20" fill="#58a6ff" opacity="0.6" rx="2"/>
+    <text x="120" y="160" text-anchor="middle" fill="#8b949e" font-size="10">只记录深度</text>
+    <!-- 箭头 -->
+    <line x1="230" y1="95" x2="280" y2="95" stroke="#58a6ff" stroke-width="2"/>
+    <polygon points="280,90 290,95 280,100" fill="#58a6ff"/>
+    <!-- 步骤2：比较深度 -->
+    <rect x="300" y="20" width="180" height="150" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <text x="390" y="45" text-anchor="middle" fill="#a855f7" font-size="13" font-weight="600">步骤 2：深度比较</text>
+    <text x="390" y="75" text-anchor="middle" fill="#8b949e" font-size="11">像素深度 vs 阴影贴图</text>
+    <text x="390" y="100" text-anchor="middle" fill="#3fb950" font-size="11">像素更近 → 亮</text>
+    <text x="390" y="120" text-anchor="middle" fill="#f85149" font-size="11">像素更远 → 暗</text>
+    <!-- 箭头 -->
+    <line x1="490" y1="95" x2="540" y2="95" stroke="#a855f7" stroke-width="2"/>
+    <polygon points="540,90 550,95 540,100" fill="#a855f7"/>
+    <!-- 步骤3：最终效果 -->
+    <rect x="560" y="20" width="120" height="150" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <text x="620" y="45" text-anchor="middle" fill="#3fb950" font-size="13" font-weight="600">步骤 3</text>
+    <rect x="580" y="60" width="80" height="80" rx="4" fill="#1a1a2e"/>
+    <rect x="590" y="70" width="30" height="30" fill="#58a6ff" opacity="0.5" rx="2"/>
+    <rect x="610" y="90" width="30" height="30" fill="#161b22" rx="2"/>
+    <text x="620" y="160" text-anchor="middle" fill="#8b949e" font-size="10">最终阴影</text>
+    <!-- 底部说明 -->
+    <text x="350" y="210" text-anchor="middle" fill="#8b949e" font-size="11">阴影分辨率越高 → 深度信息越精确 → 阴影越清晰</text>
+    <text x="350" y="230" text-anchor="middle" fill="#8b949e" font-size="11">512 → 1024 → 2048 → 4096 → 8192 → 16384</text>
+  </svg>
+  <div class="svg-caption">阴影贴图技术的三步工作流程</div>
+</div>
+
+<h3>阴影瑕疵与解决方案</h3>
+
+<div class="card">
+  <div class="card-header">
+    <div class="icon icon-a">!</div>
+    <h3>阴影痤疮 (Shadow Acne)</h3>
+  </div>
+  <p>由于精度限制，阴影贴图可能错误地将表面自身判断为"被遮挡"，导致表面出现条纹状伪阴影。</p>
+  <p><strong>解决</strong>：添加微小偏移量（Shadow Bias），让判断"稍微宽松"。</p>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="icon icon-b">!</div>
+    <h3>彼得潘现象 (Peter Panning)</h3>
+  </div>
+  <p>偏移过大会导致阴影与物体分离，看起来像物体浮在空中。</p>
+  <p><strong>解决</strong>：本项目根据阴影分辨率自动调整偏移值。</p>
+</div>
+
+<h3>软阴影过滤</h3>
+<table>
+  <tr><th>质量</th><th>效果</th><th>性能</th></tr>
+  <tr><td><span class="tag tag-red">Hard</span></td><td>锐利边缘，像刀切</td><td><span class="stars">★☆☆☆☆</span></td></tr>
+  <tr><td><span class="tag tag-orange">Very Low ~ Low</span></td><td>轻微柔和</td><td><span class="stars">★★☆☆☆</span></td></tr>
+  <tr><td><span class="tag tag-blue">Medium</span></td><td>较柔和 <span class="recommend">性价比</span></td><td><span class="stars">★★★☆☆</span></td></tr>
+  <tr><td><span class="tag tag-green">High ~ Ultra</span></td><td>非常柔和自然</td><td><span class="stars">★★★★★</span></td></tr>
+</table>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ===== 章节 8：LOD ===== -->
+<section id="ch8" class="scroll-reveal">
+<h2><span class="chapter-num">Chapter 08</span>细节层次 (LOD)</h2>
+
+<p>LOD 根据物体与摄像机的距离，自动切换不同精度的模型，节省 GPU 顶点处理开销。</p>
+
+<div class="svg-container">
+  <svg viewBox="0 0 700 180" xmlns="http://www.w3.org/2000/svg">
+    <!-- 近距离高精度 -->
+    <rect x="20" y="20" width="180" height="130" rx="8" fill="#161b22" stroke="#3fb950" stroke-width="2"/>
+    <polygon points="110,40 60,130 160,130" fill="none" stroke="#3fb950" stroke-width="2"/>
+    <line x1="85" y1="85" x2="135" y2="85" stroke="#3fb950" stroke-width="1" opacity="0.5"/>
+    <line x1="72" y1="107" x2="148" y2="107" stroke="#3fb950" stroke-width="1" opacity="0.5"/>
+    <text x="110" y="165" text-anchor="middle" fill="#3fb950" font-size="12" font-weight="600">近距离：1000 三角形</text>
+    <!-- 中距离 -->
+    <rect x="260" y="20" width="180" height="130" rx="8" fill="#161b22" stroke="#58a6ff" stroke-width="2"/>
+    <polygon points="350,40 310,130 390,130" fill="none" stroke="#58a6ff" stroke-width="2"/>
+    <line x1="330" y1="85" x2="370" y2="85" stroke="#58a6ff" stroke-width="1" opacity="0.5"/>
+    <text x="350" y="165" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="600">中距离：200 三角形</text>
+    <!-- 远距离低精度 -->
+    <rect x="500" y="20" width="180" height="130" rx="8" fill="#161b22" stroke="#d97706" stroke-width="2"/>
+    <polygon points="590,40 560,130 620,130" fill="none" stroke="#d97706" stroke-width="2"/>
+    <text x="590" y="165" text-anchor="middle" fill="#d97706" font-size="12" font-weight="600">远距离：50 三角形</text>
+    <!-- 距离标签 -->
+    <text x="110" y="15" text-anchor="middle" fill="#8b949e" font-size="10">近</text>
+    <text x="350" y="15" text-anchor="middle" fill="#8b949e" font-size="10">中</text>
+    <text x="590" y="15" text-anchor="middle" fill="#8b949e" font-size="10">远</text>
+  </svg>
+  <div class="svg-caption">LOD 根据距离自动切换模型精度</div>
+</div>
+
+<h3>LOD 阈值设置</h3>
+<table>
+  <tr><th>阈值</th><th>行为</th><th>适用场景</th></tr>
+  <tr><td>0</td><td>不使用 LOD（始终最高精度）</td><td>截图、模型展示</td></tr>
+  <tr><td>2</td><td>非常积极使用 LOD</td><td>追求性能</td></tr>
+  <tr><td>4</td><td>中等 LOD 使用</td><td>平衡选择</td></tr>
+  <tr><td>8</td><td>保守使用 LOD</td><td>追求画质</td></tr>
+</table>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ===== 章节 9：全局光照 ===== -->
+<section id="ch9" class="scroll-reveal">
+<h2><span class="chapter-num">Chapter 09</span>全局光照</h2>
+
+<p><strong>直接光照</strong>：光线从光源直接照射到物体表面。<strong>全局光照</strong>：光线在场景中多次反弹后产生的间接光照效果。</p>
+
+<div class="svg-container">
+  <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+    <!-- 无 GI -->
+    <rect x="20" y="20" width="300" height="180" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <text x="170" y="45" text-anchor="middle" fill="#f85149" font-size="13" font-weight="600">无全局光照</text>
+    <!-- 房间 -->
+    <rect x="50" y="70" width="240" height="100" rx="2" fill="none" stroke="#30363d" stroke-width="2"/>
+    <!-- 窗户 -->
+    <rect x="60" y="80" width="30" height="40" fill="#58a6ff" opacity="0.3"/>
+    <!-- 光线 -->
+    <line x1="75" y1="80" x2="120" y2="120" stroke="#f0883e" stroke-width="1.5"/>
+    <line x1="75" y1="100" x2="120" y2="130" stroke="#f0883e" stroke-width="1.5"/>
+    <!-- 暗区 -->
+    <rect x="180" y="100" width="80" height="50" fill="#0d1117" rx="2"/>
+    <text x="220" y="130" text-anchor="middle" fill="#f85149" font-size="10">全黑</text>
+    <!-- 有 GI -->
+    <rect x="380" y="20" width="300" height="180" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <text x="530" y="45" text-anchor="middle" fill="#3fb950" font-size="13" font-weight="600">有全局光照</text>
+    <!-- 房间 -->
+    <rect x="410" y="70" width="240" height="100" rx="2" fill="none" stroke="#30363d" stroke-width="2"/>
+    <!-- 窗户 -->
+    <rect x="420" y="80" width="30" height="40" fill="#58a6ff" opacity="0.3"/>
+    <!-- 光线+反弹 -->
+    <line x1="435" y1="80" x2="480" y2="120" stroke="#f0883e" stroke-width="1.5"/>
+    <line x1="435" y1="100" x2="480" y2="130" stroke="#f0883e" stroke-width="1.5"/>
+    <line x1="480" y1="120" x2="530" y2="140" stroke="#f0883e" stroke-width="1" opacity="0.5"/>
+    <line x1="480" y1="130" x2="540" y2="145" stroke="#f0883e" stroke-width="1" opacity="0.5"/>
+    <!-- 间接光 -->
+    <rect x="540" y="100" width="80" height="50" fill="#f0883e" opacity="0.1" rx="2"/>
+    <text x="580" y="130" text-anchor="middle" fill="#f0883e" font-size="10">有间接光</text>
+  </svg>
+  <div class="svg-caption">全局光照让阴影区域也能接收到反弹的间接光</div>
+</div>
+
+<h3>SDFGI（有符号距离场全局光照）</h3>
+<p>将场景表示为 SDF（有符号距离场），从多个方向发射光线计算传播，存储在 3D 纹理中。完全动态，无需预计算。</p>
+
+<div class="pros-cons">
+  <div class="pros">
+    <h4>✓ 优点</h4>
+    <ul>
+      <li>完全动态，无需预计算</li>
+      <li>支持大规模场景</li>
+      <li>实时更新光照变化</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>✗ 缺点</h4>
+    <ul>
+      <li>有漏光问题（光线穿过薄墙）</li>
+      <li>内存占用大</li>
+      <li>GPU 开销较高</li>
+    </ul>
+  </div>
+</div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ===== 章节 10：SSAO ===== -->
+<section id="ch10" class="scroll-reveal">
+<h2><span class="chapter-num">Chapter 10</span>环境光遮蔽 (SSAO)</h2>
+
+<p>SSAO 模拟"缝隙处更暗"的效果。在现实世界中，角落、缝隙、凹陷处因为接收到的环境光更少，所以显得更暗。</p>
+
+<div class="svg-container">
+  <svg viewBox="0 0 600 180" xmlns="http://www.w3.org/2000/svg">
+    <!-- 无 SSAO -->
+    <rect x="20" y="20" width="250" height="140" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <text x="145" y="45" text-anchor="middle" fill="#f85149" font-size="12" font-weight="600">无 SSAO</text>
+    <rect x="50" y="60" width="190" height="80" rx="4" fill="#1a1a2e" stroke="#30363d" stroke-width="1"/>
+    <rect x="100" y="80" width="50" height="40" fill="#161b22" stroke="#30363d" stroke-width="1" rx="2"/>
+    <text x="145" y="155" text-anchor="middle" fill="#8b949e" font-size="10">平面看起来平坦</text>
+    <!-- 有 SSAO -->
+    <rect x="330" y="20" width="250" height="140" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <text x="455" y="45" text-anchor="middle" fill="#3fb950" font-size="12" font-weight="600">有 SSAO</text>
+    <rect x="360" y="60" width="190" height="80" rx="4" fill="#1a1a2e" stroke="#30363d" stroke-width="1"/>
+    <rect x="410" y="80" width="50" height="40" fill="#161b22" stroke="#30363d" stroke-width="1" rx="2"/>
+    <!-- 遮蔽效果 -->
+    <rect x="360" y="60" width="20" height="80" fill="#3fb950" opacity="0.15"/>
+    <rect x="380" y="60" width="10" height="80" fill="#3fb950" opacity="0.08"/>
+    <rect x="410" y="80" width="10" height="40" fill="#3fb950" opacity="0.15"/>
+    <rect x="400" y="70" width="10" height="10" fill="#3fb950" opacity="0.1"/>
+    <rect x="455" y="60" width="10" height="80" fill="#3fb950" opacity="0.08"/>
+    <rect x="540" y="60" width="10" height="80" fill="#3fb950" opacity="0.08"/>
+    <text x="455" y="155" text-anchor="middle" fill="#8b949e" font-size="10">角落和缝隙处有柔和阴影</text>
+  </svg>
+  <div class="svg-caption">SSAO 在几何缝隙处添加自然的遮蔽暗化效果</div>
+</div>
+
+<h3>质量等级</h3>
+<table>
+  <tr><th>等级</th><th>采样点数</th><th>效果</th><th>性能</th></tr>
+  <tr><td><span class="tag tag-red">Very Low</span></td><td>少</td><td>粗糙，可能有噪点</td><td><span class="stars">★☆☆☆☆</span></td></tr>
+  <tr><td><span class="tag tag-orange">Low ~ Medium</span></td><td>中等</td><td>较平滑 <span class="recommend">推荐</span></td><td><span class="stars">★★★☆☆</span></td></tr>
+  <tr><td><span class="tag tag-green">High ~ Ultra</span></td><td>多</td><td>平滑自然</td><td><span class="stars">★★★★★</span></td></tr>
+</table>
+
+<div class="info-box warn">
+  <strong>局限性</strong>：SSAO 是屏幕空间技术，只能利用当前屏幕上可见的信息。被遮挡的物体（在视野外）不会产生遮蔽效果。
+</div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ===== 章节 11：SSR ===== -->
+<section id="ch11" class="scroll-reveal">
+<h2><span class="chapter-num">Chapter 11</span>屏幕空间反射 (SSR)</h2>
+
+<p>SSR 在屏幕上模拟反射效果，常用于光滑地板、水面、金属表面等。</p>
+
+<div class="svg-container">
+  <svg viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- 摄像机 -->
+    <circle cx="300" cy="30" r="12" fill="none" stroke="#58a6ff" stroke-width="2"/>
+    <text x="300" y="35" text-anchor="middle" fill="#58a6ff" font-size="10">C</text>
+    <!-- 反射光线 -->
+    <line x1="280" y1="42" x2="200" y2="120" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="6,3"/>
+    <line x1="200" y1="120" x2="260" y2="60" stroke="#f0883e" stroke-width="1.5"/>
+    <!-- 地面 -->
+    <line x1="50" y1="140" x2="550" y2="140" stroke="#30363d" stroke-width="2"/>
+    <!-- 反射区域 -->
+    <rect x="160" y="140" width="120" height="40" fill="#f0883e" opacity="0.1" rx="2"/>
+    <text x="220" y="165" text-anchor="middle" fill="#f0883e" font-size="10">反射区域</text>
+    <!-- 物体 -->
+    <rect x="240" y="60" width="30" height="40" fill="#58a6ff" opacity="0.3" rx="2"/>
+    <text x="255" y="110" text-anchor="middle" fill="#58a6ff" font-size="10">物体</text>
+    <!-- 步进示意 -->
+    <text x="420" y="50" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="600">工作原理</text>
+    <text x="420" y="75" text-anchor="middle" fill="#8b949e" font-size="11">1. 从像素发射反射光线</text>
+    <text x="420" y="95" text-anchor="middle" fill="#8b949e" font-size="11">2. 沿方向步进 (Ray March)</text>
+    <text x="420" y="115" text-anchor="middle" fill="#8b949e" font-size="11">3. 找到交点 → 采样颜色</text>
+    <text x="420" y="135" text-anchor="middle" fill="#8b949e" font-size="11">4. 叠加为反射颜色</text>
+  </svg>
+  <div class="svg-caption">SSR 的光线步进工作流程</div>
+</div>
+
+<h3>步数 (Max Steps)</h3>
+<table>
+  <tr><th>步数</th><th>效果</th><th>性能</th></tr>
+  <tr><td><span class="tag tag-red">8</span></td><td>只能反射近处物体</td><td><span class="stars">★☆☆☆☆</span></td></tr>
+  <tr><td><span class="tag tag-blue">32</span></td><td>能反射大部分屏幕内容 <span class="recommend">推荐</span></td><td><span class="stars">★★★☆☆</span></td></tr>
+  <tr><td><span class="tag tag-green">56</span></td><td>能反射更远处的物体</td><td><span class="stars">★★★★☆</span></td></tr>
+</table>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ===== 章节 12：SSIL ===== -->
+<section id="ch12" class="scroll-reveal">
+<h2><span class="chapter-num">Chapter 12</span>屏幕空间间接光照 (SSIL)</h2>
+
+<p>SSIL 是 SSAO 的"增强版"。SSAO 只能让角落变暗，SSIL 不仅能计算遮蔽，还能计算<strong>间接光照的颜色</strong>。</p>
+
+<div class="svg-container">
+  <svg viewBox="0 0 600 160" xmlns="http://www.w3.org/2000/svg">
+    <!-- 无 SSIL -->
+    <rect x="20" y="20" width="250" height="120" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <text x="145" y="42" text-anchor="middle" fill="#f85149" font-size="12" font-weight="600">无 SSIL</text>
+    <rect x="50" y="55" width="80" height="60" rx="4" fill="#1a1a2e" stroke="#30363d" stroke-width="1"/>
+    <rect x="170" y="55" width="40" height="40" rx="4" fill="#f85149" opacity="0.4"/>
+    <text x="190" y="130" text-anchor="middle" fill="#8b949e" font-size="10">白色墙壁不受红球影响</text>
+    <!-- 有 SSIL -->
+    <rect x="330" y="20" width="250" height="120" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <text x="455" y="42" text-anchor="middle" fill="#3fb950" font-size="12" font-weight="600">有 SSIL</text>
+    <rect x="360" y="55" width="80" height="60" rx="4" fill="#1a1a2e" stroke="#30363d" stroke-width="1"/>
+    <rect x="480" y="55" width="40" height="40" rx="4" fill="#f85149" opacity="0.4"/>
+    <!-- 颜色溢出 -->
+    <rect x="440" y="55" width="20" height="60" fill="#f85149" opacity="0.1"/>
+    <rect x="430" y="60" width="10" height="50" fill="#f85149" opacity="0.05"/>
+    <text x="455" y="130" text-anchor="middle" fill="#8b949e" font-size="10">墙壁被红球"染红"（色彩渗透）</text>
+  </svg>
+  <div class="svg-caption">SSIL 实现颜色反弹的间接光照效果</div>
+</div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ===== 章节 13：Glow ===== -->
+<section id="ch13" class="scroll-reveal">
+<h2><span class="chapter-num">Chapter 13</span>辉光与泛光 (Glow/Bloom)</h2>
+
+<p>在现实中，非常亮的光源会在相机/眼睛中产生"光晕"效果。游戏中通过提取高亮区域、模糊、再叠加来模拟。</p>
+
+<div class="svg-container">
+  <svg viewBox="0 0 700 140" xmlns="http://www.w3.org/2000/svg">
+    <!-- 原始 -->
+    <rect x="20" y="20" width="180" height="100" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <text x="110" y="42" text-anchor="middle" fill="#8b949e" font-size="11">原始画面</text>
+    <circle cx="110" cy="75" r="15" fill="#f0883e" opacity="0.8"/>
+    <!-- 提取 -->
+    <line x1="210" y1="70" x2="260" y2="70" stroke="#58a6ff" stroke-width="2"/>
+    <polygon points="260,65 270,70 260,75" fill="#58a6ff"/>
+    <rect x="280" y="20" width="180" height="100" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <text x="370" y="42" text-anchor="middle" fill="#8b949e" font-size="11">提取高亮</text>
+    <circle cx="370" cy="75" r="20" fill="#f0883e" opacity="0.3"/>
+    <circle cx="370" cy="75" r="10" fill="#f0883e" opacity="0.6"/>
+    <!-- 模糊 -->
+    <line x1="470" y1="70" x2="520" y2="70" stroke="#58a6ff" stroke-width="2"/>
+    <polygon points="520,65 530,70 520,75" fill="#58a6ff"/>
+    <rect x="540" y="20" width="140" height="100" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <text x="610" y="42" text-anchor="middle" fill="#3fb950" font-size="11" font-weight="600">叠加回原图</text>
+    <circle cx="610" cy="75" r="25" fill="#f0883e" opacity="0.15"/>
+    <circle cx="610" cy="75" r="15" fill="#f0883e" opacity="0.3"/>
+    <circle cx="610" cy="75" r="8" fill="#f0883e" opacity="0.8"/>
+  </svg>
+  <div class="svg-caption">Glow 效果的处理流程：提取 → 模糊 → 叠加</div>
+</div>
+
+<table>
+  <tr><th>等级</th><th>效果</th><th>适用场景</th></tr>
+  <tr><td><span class="tag tag-blue">禁用</span></td><td>无光晕</td><td>写实风格、低配设备</td></tr>
+  <tr><td><span class="tag tag-green">低</span></td><td>微妙的光晕</td><td>大多数游戏</td></tr>
+  <tr><td><span class="tag tag-purple">高</span></td><td>明显光晕 + 双三次上采样</td><td>科幻、奇幻风格</td></tr>
+</table>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ===== 章节 14：体积雾 ===== -->
+<section id="ch14" class="scroll-reveal">
+<h2><span class="chapter-num">Chapter 14</span>体积雾 (Volumetric Fog)</h2>
+
+<p>传统雾效只根据距离改变颜色（距离雾），效果平淡。体积雾将空间划分为 3D 网格，在每个网格中计算光照与散射，产生真实的<strong>光束效果 (God Rays)</strong>。</p>
+
+<div class="svg-container">
+  <svg viewBox="0 0 600 180" xmlns="http://www.w3.org/2000/svg">
+    <!-- 传统雾 -->
+    <rect x="20" y="20" width="250" height="140" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <text x="145" y="42" text-anchor="middle" fill="#f85149" font-size="12" font-weight="600">传统距离雾</text>
+    <rect x="40" y="55" width="210" height="80" rx="4" fill="#8b949e" opacity="0.15"/>
+    <text x="145" y="100" text-anchor="middle" fill="#8b949e" font-size="11">均匀灰白色</text>
+    <text x="145" y="150" text-anchor="middle" fill="#8b949e" font-size="10">只根据距离改变颜色</text>
+    <!-- 体积雾 -->
+    <rect x="330" y="20" width="250" height="140" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <text x="455" y="42" text-anchor="middle" fill="#3fb950" font-size="12" font-weight="600">体积雾</text>
+    <!-- 光束 -->
+    <line x1="455" y1="55" x2="400" y2="140" stroke="#f0883e" stroke-width="2" opacity="0.4"/>
+    <line x1="455" y1="55" x2="430" y2="140" stroke="#f0883e" stroke-width="2" opacity="0.5"/>
+    <line x1="455" y1="55" x2="455" y2="140" stroke="#f0883e" stroke-width="2" opacity="0.6"/>
+    <line x1="455" y1="55" x2="480" y2="140" stroke="#f0883e" stroke-width="2" opacity="0.5"/>
+    <line x1="455" y1="55" x2="510" y2="140" stroke="#f0883e" stroke-width="2" opacity="0.4"/>
+    <circle cx="455" cy="50" r="8" fill="#f0883e" opacity="0.8"/>
+    <text x="455" y="155" text-anchor="middle" fill="#8b949e" font-size="10">3D 网格计算光照散射</text>
+  </svg>
+  <div class="svg-caption">体积雾实现真实的光束穿透效果</div>
+</div>
+
+<h3>时间滤波</h3>
+<table>
+  <tr><th>设置</th><th>效果</th></tr>
+  <tr><td><span class="tag tag-orange">低（无时间滤波）</span></td><td>可能有噪点，但无拖尾</td></tr>
+  <tr><td><span class="tag tag-green">高（带时间滤波）</span></td><td>平滑，但快速移动时有轻微拖尾</td></tr>
+</table>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ===== 章节 15：FSR ===== -->
+<section id="ch15" class="scroll-reveal">
+<h2><span class="chapter-num">Chapter 15</span>超级分辨率 (FSR)</h2>
+
+<p>高分辨率画质好但 GPU 负担重。超级分辨率技术允许以较低分辨率渲染，然后通过智能算法放大，以较低性能代价获得接近高分辨率的画质。</p>
+
+<div class="svg-container">
+  <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- 低分辨率渲染 -->
+    <rect x="20" y="40" width="120" height="90" rx="6" fill="#161b22" stroke="#d97706" stroke-width="2"/>
+    <text x="80" y="30" text-anchor="middle" fill="#d97706" font-size="11" font-weight="600">低分辨率渲染</text>
+    <text x="80" y="90" text-anchor="middle" fill="#8b949e" font-size="10">GPU 负担轻</text>
+    <!-- FSR 1.0 -->
+    <line x1="150" y1="85" x2="220" y2="65" stroke="#3fb950" stroke-width="2"/>
+    <polygon points="220,60 230,65 220,70" fill="#3fb950"/>
+    <rect x="240" y="20" width="160" height="110" rx="6" fill="#161b22" stroke="#3fb950" stroke-width="2"/>
+    <text x="320" y="15" text-anchor="middle" fill="#3fb950" font-size="11" font-weight="600">FSR 1.0</text>
+    <text x="320" y="50" text-anchor="middle" fill="#8b949e" font-size="10">空间算法</text>
+    <text x="320" y="70" text-anchor="middle" fill="#8b949e" font-size="10">只用当前帧</text>
+    <text x="320" y="95" text-anchor="middle" fill="#3fb950" font-size="11">效果好</text>
+    <text x="320" y="115" text-anchor="middle" fill="#8b949e" font-size="10">开销极小</text>
+    <!-- FSR 2.2 -->
+    <line x1="150" y1="85" x2="470" y2="65" stroke="#a855f7" stroke-width="2"/>
+    <polygon points="470,60 480,65 470,70" fill="#a855f7"/>
+    <rect x="490" y="20" width="190" height="110" rx="6" fill="#161b22" stroke="#a855f7" stroke-width="2"/>
+    <text x="585" y="15" text-anchor="middle" fill="#a855f7" font-size="11" font-weight="600">FSR 2.2</text>
+    <text x="585" y="50" text-anchor="middle" fill="#8b949e" font-size="10">时间算法（利用多帧）</text>
+    <text x="585" y="70" text-anchor="middle" fill="#8b949e" font-size="10">颜色 + 深度 + 运动向量</text>
+    <text x="585" y="95" text-anchor="middle" fill="#a855f7" font-size="11">效果很好</text>
+    <text x="585" y="115" text-anchor="middle" fill="#8b949e" font-size="10">开销较小</text>
+    <!-- 对比标签 -->
+    <text x="350" y="170" text-anchor="middle" fill="#8b949e" font-size="11">FSR 是 AMD 开源方案，支持所有 GPU（无需 NVIDIA RTX）</text>
+  </svg>
+  <div class="svg-caption">FSR 1.0 vs 2.2 的技术路线对比</div>
+</div>
+
+<h3>与其他技术对比</h3>
+<table>
+  <tr><th>技术</th><th>厂商</th><th>开源</th><th>质量</th><th>兼容性</th></tr>
+  <tr><td><span class="tag tag-green">FSR 1.0</span></td><td>AMD</td><td>✅</td><td>好</td><td>所有 GPU</td></tr>
+  <tr><td><span class="tag tag-green">FSR 2.x</span></td><td>AMD</td><td>✅</td><td>很好</td><td>所有 GPU</td></tr>
+  <tr><td><span class="tag tag-blue">DLSS</span></td><td>NVIDIA</td><td>❌</td><td>最好</td><td>仅 RTX GPU</td></tr>
+  <tr><td><span class="tag tag-purple">XeSS</span></td><td>Intel</td><td>部分</td><td>好</td><td>所有 GPU</td></tr>
+</table>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ===== 章节 16：色彩调节 ===== -->
+<section id="ch16" class="scroll-reveal">
+<h2><span class="chapter-num">Chapter 16</span>色彩与画面调节</h2>
+
+<div class="compare-grid">
+  <div class="compare-item item-blue">
+    <h4>亮度 (Brightness)</h4>
+    <p>调整画面整体明暗。过高会导致高光区域"过曝"（全白），丢失细节。</p>
+    <div style="margin-top:8px;font-size:12px;color:var(--gray)">范围：0.5 ~ 2.0（默认 1.0）</div>
+  </div>
+  <div class="compare-item item-orange">
+    <h4>对比度 (Contrast)</h4>
+    <p>调整亮暗区域差异。低对比度"灰蒙蒙"，高对比度色彩更"浓烈"。</p>
+    <div style="margin-top:8px;font-size:12px;color:var(--gray)">范围：0.5 ~ 2.0（默认 1.0）</div>
+  </div>
+  <div class="compare-item item-purple">
+    <h4>饱和度 (Saturation)</h4>
+    <p>调整颜色鲜艳程度。0 = 完全黑白，>1 = 更鲜艳的"油画感"。</p>
+    <div style="margin-top:8px;font-size:12px;color:var(--gray)">范围：0.01 ~ 2.0（默认 1.0）</div>
+  </div>
+</div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ===== 章节 17：PBR 材质 ===== -->
+<section id="ch17" class="scroll-reveal">
+<h2><span class="chapter-num">Chapter 17</span>PBR 材质与纹理</h2>
+
+<p>本项目使用 PolyHaven 的帆船模型，展示了 PBR（基于物理的渲染）材质系统。</p>
+
+<h3>PBR 贴图类型</h3>
+<table>
+  <tr><th>贴图</th><th>文件名后缀</th><th>作用</th></tr>
+  <tr><td><span class="tag tag-blue">漫反射</span></td><td><code>_diff</code></td><td>物体的固有颜色</td></tr>
+  <tr><td><span class="tag tag-green">ARM</span></td><td><code>_arm</code></td><td>A=环境光遮蔽，R=粗糙度，M=金属度（三合一打包）</td></tr>
+  <tr><td><span class="tag tag-purple">法线</span></td><td><code>_nor</code></td><td>表面凹凸细节，模拟几何细节而不增加三角形</td></tr>
+</table>
+
+<h3>法线贴图原理</h3>
+<div class="svg-container">
+  <svg viewBox="0 0 600 150" xmlns="http://www.w3.org/2000/svg">
+    <!-- 实际几何 -->
+    <rect x="20" y="20" width="250" height="110" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+    <text x="145" y="42" text-anchor="middle" fill="#8b949e" font-size="12">实际几何（平面）</text>
+    <rect x="50" y="60" width="190" height="40" rx="2" fill="#1a1a2e" stroke="#30363d" stroke-width="1"/>
+    <text x="145" y="85" text-anchor="middle" fill="#8b949e" font-size="10">平坦的表面</text>
+    <!-- 箭头 -->
+    <line x1="280" y1="75" x2="340" y2="75" stroke="#a855f7" stroke-width="2"/>
+    <polygon points="340,70 350,75 340,80" fill="#a855f7"/>
+    <text x="310" y="65" text-anchor="middle" fill="#a855f7" font-size="10">法线贴图</text>
+    <!-- 渲染效果 -->
+    <rect x="360" y="20" width="220" height="110" rx="8" fill="#161b22" stroke="#3fb950" stroke-width="1"/>
+    <text x="470" y="42" text-anchor="middle" fill="#3fb950" font-size="12">渲染效果</text>
+    <!-- 凹凸效果 -->
+    <path d="M390,80 Q410,60 430,80 Q450,100 470,80 Q490,60 510,80 Q530,100 550,80" fill="none" stroke="#3fb950" stroke-width="2"/>
+    <text x="470" y="120" text-anchor="middle" fill="#8b949e" font-size="10">看起来有凹凸细节</text>
+  </svg>
+  <div class="svg-caption">法线贴图用颜色信息模拟几何凹凸，无需增加三角形数量</div>
+</div>
+
+<div class="info-box">
+  <strong>glTF 格式</strong>：本项目使用 glTF 2.0 格式（`.gltf` + `.bin`），这是 3D 资产的"JPEG"格式——开放标准、高效、PBR 原生支持。
+</div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ===== 章节 18：性能与画质权衡 ===== -->
+<section id="ch18" class="scroll-reveal">
+<h2><span class="chapter-num">Chapter 18</span>性能与画质权衡</h2>
+
+<h3>各设置项性能影响总览</h3>
+<table>
+  <tr><th>设置项</th><th>性能影响</th><th>画质影响</th><th>建议</th></tr>
+  <tr class="highlight-row"><td>分辨率缩放</td><td><span class="stars">★★★★★</span></td><td><span class="stars">★★★★★</span></td><td>最重要的设置，优先调整</td></tr>
+  <tr><td>MSAA</td><td><span class="stars">★★★☆☆</span>~<span class="stars">★★★★★</span></td><td><span class="stars">★★★☆☆</span></td><td>4x 性价比最高</td></tr>
+  <tr><td>TAA</td><td><span class="stars">★★★☆☆</span></td><td><span class="stars">★★★★☆</span></td><td>推荐开启</td></tr>
+  <tr><td>FXAA/SMAA</td><td><span class="stars">★☆☆☆☆</span>~<span class="stars">★★☆☆☆</span></td><td><span class="stars">★★☆☆☆</span></td><td>低配好选择</td></tr>
+  <tr class="highlight-row"><td>阴影分辨率</td><td><span class="stars">★★★★☆</span></td><td><span class="stars">★★★★☆</span></td><td>2048-4096 合理范围</td></tr>
+  <tr><td>阴影过滤</td><td><span class="stars">★★☆☆☆</span>~<span class="stars">★★★★★</span></td><td><span class="stars">★★★☆☆</span></td><td>Medium 性价比</td></tr>
+  <tr class="highlight-row"><td>SDFGI</td><td><span class="stars">★★★★☆</span></td><td><span class="stars">★★★★★</span></td><td>画质提升巨大</td></tr>
+  <tr><td>SSAO</td><td><span class="stars">★★★☆☆</span></td><td><span class="stars">★★★☆☆</span></td><td>推荐开启</td></tr>
+  <tr><td>SSR</td><td><span class="stars">★★★☆☆</span></td><td><span class="stars">★★★☆☆</span></td><td>反射场景效果明显</td></tr>
+  <tr><td>SSIL</td><td><span class="stars">★★★★☆</span></td><td><span class="stars">★★★☆☆</span></td><td>高配选择</td></tr>
+  <tr><td>Glow</td><td><span class="stars">★★☆☆☆</span></td><td><span class="stars">★★☆☆☆</span></td><td>开销低，推荐开启</td></tr>
+  <tr><td>体积雾</td><td><span class="stars">★★★★☆</span></td><td><span class="stars">★★★☆☆</span></td><td>看场景需求</td></tr>
+</table>
+
+<h3>推荐配置方案</h3>
+
+<div class="config-card low">
+  <div class="config-title" style="color:var(--green)">低配方案</div>
+  <div class="config-subtitle">集成显卡 / 老旧独显</div>
+  <div class="config-grid">
+    <div class="config-item"><span class="key">分辨率缩放：</span><span class="val">0.75</span></div>
+    <div class="config-item"><span class="key">滤镜：</span><span class="val">FSR 1.0</span></div>
+    <div class="config-item"><span class="key">抗锯齿：</span><span class="val">FXAA</span></div>
+    <div class="config-item"><span class="key">阴影：</span><span class="val">1024, Hard</span></div>
+    <div class="config-item"><span class="key">LOD：</span><span class="val">Low</span></div>
+    <div class="config-item"><span class="key">后处理：</span><span class="val">全部禁用</span></div>
+  </div>
+</div>
+
+<div class="config-card mid">
+  <div class="config-title" style="color:var(--accent)">中配方案</div>
+  <div class="config-subtitle">GTX 1060 / RX 580 级别</div>
+  <div class="config-grid">
+    <div class="config-item"><span class="key">分辨率缩放：</span><span class="val">1.0</span></div>
+    <div class="config-item"><span class="key">滤镜：</span><span class="val">Bilinear</span></div>
+    <div class="config-item"><span class="key">抗锯齿：</span><span class="val">TAA</span></div>
+    <div class="config-item"><span class="key">阴影：</span><span class="val">2048, Low</span></div>
+    <div class="config-item"><span class="key">LOD：</span><span class="val">Medium</span></div>
+    <div class="config-item"><span class="key">SDFGI：</span><span class="val">低</span></div>
+    <div class="config-item"><span class="key">Glow：</span><span class="val">低</span></div>
+    <div class="config-item"><span class="key">SSAO：</span><span class="val">Very Low</span></div>
+  </div>
+</div>
+
+<div class="config-card high">
+  <div class="config-title" style="color:var(--orange)">高配方案</div>
+  <div class="config-subtitle">RTX 3070 / RX 6800 级别</div>
+  <div class="config-grid">
+    <div class="config-item"><span class="key">分辨率缩放：</span><span class="val">1.0（或 FSR 2.2 + 0.85）</span></div>
+    <div class="config-item"><span class="key">抗锯齿：</span><span class="val">TAA + SMAA</span></div>
+    <div class="config-item"><span class="key">阴影：</span><span class="val">4096, Medium</span></div>
+    <div class="config-item"><span class="key">LOD：</span><span class="val">High</span></div>
+    <div class="config-item"><span class="key">SDFGI：</span><span class="val">低</span></div>
+    <div class="config-item"><span class="key">Glow：</span><span class="val">高</span></div>
+    <div class="config-item"><span class="key">SSAO：</span><span class="val">Medium</span></div>
+    <div class="config-item"><span class="key">SSR：</span><span class="val">中</span></div>
+    <div class="config-item"><span class="key">体积雾：</span><span class="val">高</span></div>
+  </div>
+</div>
+
+<div class="config-card ultra">
+  <div class="config-title" style="color:var(--purple)">旗舰方案</div>
+  <div class="config-subtitle">RTX 4090 / RX 7900 XTX</div>
+  <div class="config-grid">
+    <div class="config-item"><span class="key">分辨率缩放：</span><span class="val">1.5+（超采样）</span></div>
+    <div class="config-item"><span class="key">抗锯齿：</span><span class="val">TAA + SMAA + MSAA 2x</span></div>
+    <div class="config-item"><span class="key">阴影：</span><span class="val">8192, Very High</span></div>
+    <div class="config-item"><span class="key">LOD：</span><span class="val">Ultra</span></div>
+    <div class="config-item"><span class="key">SDFGI：</span><span class="val">高</span></div>
+    <div class="config-item"><span class="key">全部效果：</span><span class="val">最高</span></div>
+  </div>
+</div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ===== 术语表 ===== -->
+<section class="scroll-reveal">
+<h2>附录：常用术语表</h2>
+<div class="glossary-grid">
+  <div class="glossary-item"><span class="term">GPU</span><span class="def">Graphics Processing Unit，图形处理器</span></div>
+  <div class="glossary-item"><span class="term">VRAM</span><span class="def">Video RAM，显存</span></div>
+  <div class="glossary-item"><span class="term">Draw Call</span><span class="def">CPU 向 GPU 发送的一次绘制命令</span></div>
+  <div class="glossary-item"><span class="term">Shader</span><span class="def">运行在 GPU 上的小程序，控制渲染效果</span></div>
+  <div class="glossary-item"><span class="term">Post-processing</span><span class="def">在渲染完成后对图像进行的处理</span></div>
+  <div class="glossary-item"><span class="term">Temporal</span><span class="def">利用时间维度（多帧）信息的技术</span></div>
+  <div class="glossary-item"><span class="term">Screen Space</span><span class="def">仅利用当前屏幕上可见信息的技术</span></div>
+  <div class="glossary-item"><span class="term">Ray Marching</span><span class="def">沿光线方向逐步前进的算法</span></div>
+  <div class="glossary-item"><span class="term">Voxel</span><span class="def">3D 像素（体积像素）</span></div>
+  <div class="glossary-item"><span class="term">SDF</span><span class="def">Signed Distance Field，有符号距离场</span></div>
+  <div class="glossary-item"><span class="term">PCF</span><span class="def">Percentage-Closer Filtering，阴影采样滤波</span></div>
+  <div class="glossary-item"><span class="term">PCSS</span><span class="def">Percentage-Closer Soft Shadows，软阴影算法</span></div>
+  <div class="glossary-item"><span class="term">PBR</span><span class="def">Physically Based Rendering，基于物理的渲染</span></div>
+  <div class="glossary-item"><span class="term">glTF</span><span class="def">GL Transmission Format，3D 资产传输格式</span></div>
+  <div class="glossary-item"><span class="term">Bloom</span><span class="def">高亮区域的光晕溢出效果</span></div>
+  <div class="glossary-item"><span class="term">God Rays</span><span class="def">体积光束效果（丁达尔效应）</span></div>
+</div>
+</section>
+
+<footer>
+  <p>3D 图形设置技术科普 · 基于 Godot 4.6 Graphics Settings 示例项目 · 生成于 2026-06-22</p>
+</footer>
+
+</div>
+
+<script>
+// 滚动触发动画
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
